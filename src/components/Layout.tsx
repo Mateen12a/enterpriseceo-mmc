@@ -1,9 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, ArrowUpRight, Calendar, Users, MapPin } from 'lucide-react';
+import { Menu, X, ArrowUpRight, Calendar, Users } from 'lucide-react';
 import { useApplyModal } from '../context/ApplyModalContext';
 import { ApplicationModal } from './ApplicationModal';
 
-export function Layout({ children }: { children: React.ReactNode }) {
+/**
+ * Shared page-level container to enforce strict horizontal alignment
+ * across all sections on large screens (1280px max-width, identical padding).
+ */
+export function PageContainer({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; onOpenAdmin?: () => void }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPastHero, setIsPastHero] = useState(false);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
@@ -52,6 +70,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Who It\'s For', href: '#who-its-for' },
     { name: 'Programme Structure', href: '#structure' },
     { name: 'Curriculum', href: '#curriculum' },
+    { name: 'Faculty', href: '#faculty' },
     { name: 'Logistics', href: '#logistics' },
     { name: 'Sponsorship', href: '#sponsorship' },
   ];
@@ -64,7 +83,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           isScrolled ? 'bg-navy-900/95 backdrop-blur-md shadow-md py-3' : 'bg-navy-900 py-4 sm:py-5'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <a href="#" className="flex items-center gap-3 text-white group focus:outline-none">
             {/* Authentic Brand Geometric Mark */}
             <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 bg-navy-900 flex items-center justify-center">
@@ -157,34 +176,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Floating Sticky "Apply" Bar (appears once scrolled past Hero, hides when footer is reached) */}
       <div 
-        className={`fixed bottom-0 left-0 right-0 z-40 bg-navy-900/95 backdrop-blur-md border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.35)] px-4 py-3 sm:py-3.5 transition-all duration-300 transform ${
+        className={`fixed bottom-0 left-0 right-0 z-40 bg-navy-900/95 backdrop-blur-md border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.35)] py-3 sm:py-3.5 transition-all duration-300 transform ${
           showFloatingBar ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            {/* Desktop / Tablet Event Indicator */}
+            {/* Desktop / Tablet Event Indicator - Lagos removed per user request */}
             <div className="hidden sm:flex items-center gap-3 text-xs text-cream-50/80">
               <span className="inline-flex items-center gap-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2.5 py-1 rounded font-semibold text-xs">
                 <Calendar className="w-3.5 h-3.5" />
                 21–22 October 2026
               </span>
               <span className="text-white/40">•</span>
-              <span className="inline-flex items-center gap-1 text-white font-medium">
-                <MapPin className="w-3.5 h-3.5 text-blue-400" />
-                Lagos
-              </span>
-              <span className="text-white/40">•</span>
               <span className="inline-flex items-center gap-1 text-cream-50/90 truncate">
                 <Users className="w-3.5 h-3.5 text-orange-400" />
-                Limited to 50 Senior Media Leaders
+                Limited to 30 Senior Media Leaders
               </span>
             </div>
 
             {/* Mobile Event Indicator */}
             <div className="sm:hidden flex flex-col min-w-0">
               <span className="text-xs font-bold text-white truncate">Media Owners Masterclass</span>
-              <span className="text-[11px] text-orange-400 font-medium">21–22 Oct 2026 • 50 Seats</span>
+              <span className="text-[11px] text-orange-400 font-medium">21–22 Oct 2026 • 30 Seats</span>
             </div>
           </div>
 
@@ -199,8 +213,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Footer */}
-      <footer ref={footerRef} className="bg-navy-900 text-white py-16 px-6 border-t-[16px] border-orange-500">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <footer ref={footerRef} className="bg-navy-900 text-white py-16 border-t-[16px] border-orange-500">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           <div className="space-y-4 lg:col-span-2">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 shrink-0 bg-navy-900 flex items-center justify-center">
@@ -224,14 +238,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </span>
               </div>
             </div>
-            <p className="text-cream-50/80 font-medium">EnterpriseCEO Media Company</p>
+            <p className="font-medium">
+              <a 
+                href="https://enterpriseceo.africa" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-cream-50/90 hover:text-orange-400 transition-colors"
+              >
+                EnterpriseCEO Media Company
+              </a>
+            </p>
             <p className="text-cream-50/80 max-w-sm">
               1 Emina Crescent, off Toyin Street, Ikeja, Lagos, Nigeria
             </p>
           </div>
           
           <div className="space-y-4">
-            <h4 className="font-serif text-lg text-orange-400 font-bold mb-4">Contact</h4>
+            <h4 className="font-bold text-base text-orange-400 mb-4 tracking-wide uppercase text-xs">Contact</h4>
             <p><a href="mailto:hello@enterpriseceo.africa" className="text-cream-50/80 hover:text-white transition-colors">hello@enterpriseceo.africa</a></p>
             <p className="text-cream-50/80">+234 809 079 9988</p>
             <p className="text-cream-50/80">+234 806 345 0905</p>
@@ -239,7 +262,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-serif text-lg text-orange-400 font-bold mb-4">Connect</h4>
+            <h4 className="font-bold text-base text-orange-400 mb-4 tracking-wide uppercase text-xs">Connect</h4>
             <ul className="space-y-3">
               <li><a href="https://linkedin.com/company/enterpriseceo" target="_blank" rel="noopener noreferrer" className="text-cream-50/80 hover:text-white transition-colors">LinkedIn</a></li>
               <li><a href="https://x.com/enterpriseceo" target="_blank" rel="noopener noreferrer" className="text-cream-50/80 hover:text-white transition-colors">X/Twitter</a></li>
@@ -249,8 +272,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         
-        <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-white/10 text-cream-50/50 text-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 EnterpriseCEO. All rights reserved.</p>
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 pt-8 border-t border-white/10 text-cream-50/50 text-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <p>
+              © 2026{' '}
+              <a 
+                href="https://enterpriseceo.africa" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-cream-50/90 hover:text-orange-400 underline underline-offset-4 transition-colors font-medium"
+              >
+                EnterpriseCEO
+              </a>
+              . All rights reserved.
+            </p>
+            <span className="text-white/30">•</span>
+            <span className="text-xs text-cream-50/50">
+              Powered by MDEV Collective
+            </span>
+          </div>
           <p className="text-xs text-cream-50/40">Media Owners &amp; Executives Masterclass • 21–22 October 2026</p>
         </div>
       </footer>

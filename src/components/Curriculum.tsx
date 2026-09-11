@@ -7,7 +7,6 @@ const modules = [
   {
     num: 1,
     title: "Personal Branding for Media Executives",
-    sessionLeader: "Tolulope Olorundero (Mosron Communications & PR Primus)",
     overview: "This module explores how media executives build influence beyond their organisations by developing a strong, credible, and monetisable personal brand.",
     areas: "Executive identity and thought leadership positioning; building authority in the media ecosystem; reputation architecture for media CEOs; digital presence, visibility strategy & influence scaling; personal brand as a business development tool.",
     impact: "Participants will learn how to become recognisable industry authorities that attract opportunities, partnerships, and influence."
@@ -15,7 +14,6 @@ const modules = [
   {
     num: 2,
     title: "Building Resilient Media Institutions",
-    sessionLeader: "Dr. Richard Ikiebe (Chairman, BusinessDay Board of Directors; PAU)",
     overview: "Focuses on how media organisations survive disruption, economic shocks, and digital competition while maintaining relevance and profitability.",
     areas: "Media resilience in volatile environments; sustainable newsroom models; institutional culture and adaptability; risk-proofing media organisations; leadership continuity systems.",
     impact: "Participants will be equipped to build media organisations that withstand disruption and remain competitive."
@@ -23,7 +21,6 @@ const modules = [
   {
     num: 3,
     title: "Build to Last — Structure, Power & Governance for Media Enterprise",
-    sessionLeader: "Dr. Bode Oguntoke (Head of Internal Audit, FBN Holdings Plc)",
     overview: "Examines governance frameworks and organisational structures that ensure long-term stability and accountability.",
     areas: "Corporate governance in media enterprises; ownership structures and board dynamics; editorial independence vs commercial control; decision-making architecture; institutional power balance.",
     impact: "Participants will design governance systems that ensure transparency, growth, and sustainability."
@@ -31,7 +28,6 @@ const modules = [
   {
     num: 4,
     title: "Digital Transformation & Growth Execution",
-    sessionLeader: "Executive Digital & AI Media Faculty (Guest Luminary)",
     overview: "This module focuses on digital adaptation, innovation, and execution strategies for scaling media businesses.",
     areas: "Digital-first media transformation; AI, automation & newsroom innovation; platform strategy (web, social, streaming, mobile); data-driven decision making; growth execution frameworks.",
     impact: "Participants will learn how to transition traditional media into scalable digital ecosystems."
@@ -39,7 +35,6 @@ const modules = [
   {
     num: 5,
     title: "Advertising, Corporate Sponsorship & PR Monetisation",
-    sessionLeader: "Bolaji Abimbola (CEO, Integrated Indigo Limited / Indigo PR)",
     overview: "Explores revenue generation through advertising, partnerships, sponsorships, and strategic communications.",
     areas: "Advertising ecosystem dynamics; corporate sponsorship acquisition strategies; integrated PR and brand partnerships; media sales strategy & negotiation; value packaging for advertisers.",
     impact: "Participants will strengthen revenue pipelines through structured commercial partnerships."
@@ -47,7 +42,6 @@ const modules = [
   {
     num: 6,
     title: "Economic Outlook for Media CEOs",
-    sessionLeader: "Executive Macroeconomic Faculty & Advisory Panel",
     overview: "Provides macroeconomic insight into how global and local economies affect media operations and decision-making.",
     areas: "Macroeconomic trends affecting media; inflation, currency shifts & media profitability; investment climate & funding access; consumer behaviour and media spending patterns; strategic forecasting for media CEOs.",
     impact: "Participants will make informed financial and strategic decisions based on economic intelligence."
@@ -55,7 +49,6 @@ const modules = [
   {
     num: 7,
     title: "Leadership, People & Organisational Management",
-    sessionLeader: "Femi Ipadeola (Content Lead, Boom Africa Films & Television)",
     overview: "Focuses on building high-performance media teams and leading creative talent effectively.",
     areas: "Executive leadership styles in media; talent acquisition and retention; organisational culture development; performance management systems; leading creative and editorial teams.",
     impact: "Participants will build motivated, high-performing, and aligned media teams."
@@ -63,7 +56,6 @@ const modules = [
   {
     num: 8,
     title: "Monetisation Models for Modern Media",
-    sessionLeader: "Ezekiel Solesi (Founder & CEO, LIMBsimple)",
     overview: "Covers modern revenue models that are reshaping global media businesses.",
     areas: "Subscription and membership models; advertising vs audience-supported models; event-driven media revenue systems; platform monetisation strategies; hybrid revenue ecosystem design.",
     impact: "Participants will diversify income streams and reduce dependence on traditional advertising."
@@ -71,7 +63,6 @@ const modules = [
   {
     num: 9,
     title: "Crisis Communication & Strategic Risk Management",
-    sessionLeader: "Tunde Lawanson (Head, Marketing & Corporate Comms, First HoldCo Plc)",
     overview: "Equips media executives with tools to manage crises, reputation risks, and public perception challenges.",
     areas: "Crisis communication frameworks; reputation damage control strategies; real-time media response systems; stakeholder communication during crises; risk anticipation and mitigation planning.",
     impact: "Participants will be able to manage reputational risks and protect institutional credibility."
@@ -79,7 +70,6 @@ const modules = [
   {
     num: 10,
     title: "Engaging Brands, Governments & Institutions for Strategic Communication and Public Influence",
-    sessionLeader: "David Afolayan (Co-founder & Editor-in-Chief, Technext)",
     overview: "A strategic course designed to equip leaders with the skills to shape narratives, manage perception, and drive influence across brands, governments, and institutions through effective communication.",
     areas: "Strategic communication foundations; narrative design & influence building; media relations & public engagement; government, policy & institutional communication; digital influence & reputation management.",
     impact: "Participants will be able to design and execute strategic communication that shapes perception, builds trust, and drives influence across brands, governments, and institutions."
@@ -158,7 +148,7 @@ export function Curriculum() {
                     <div className="flex items-start gap-4 sm:gap-6">
                       <span className="text-xl font-serif text-blue-600 font-bold shrink-0 w-8">{module.num}</span>
                       <div>
-                        <h3 className="text-lg font-bold text-navy-900 mb-1 pr-6">{module.title}</h3>
+                        <h3 className="text-lg font-bold text-navy-900 pr-6">{module.title}</h3>
                       </div>
                     </div>
                     <ChevronDown className={`w-5 h-5 text-navy-900 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />

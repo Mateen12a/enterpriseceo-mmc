@@ -22,6 +22,7 @@ export interface FacultyMember {
   domain: string;
   accentColor: string;
   image: string;
+  imagePosition?: string;
   isMystery?: boolean;
   mysteryHint?: string;
   mysteryRole?: string;
@@ -41,7 +42,8 @@ const facultyMembers: FacultyMember[] = [
     category: "Media Governance",
     domain: "Editorial Leadership & Policy",
     accentColor: "from-blue-700 to-blue-900 border-blue-500",
-    image: "/speakers/richard-ikiebe-portrait.png",
+    image: "/speakers/Dr.%20Richard%20Ikiebe,%20Chairman,%20Board%20of%20Directors,%20BusinessDay%20Nigeria..png",
+    imagePosition: "center 15%",
     bio: "Chairman of the Board at BusinessDay Nigeria and Senior Fellow & Director at the Centre for Leadership in Journalism (Pan-Atlantic University). A pioneer in media leadership and institutional governance with decades of executive counsel.",
     focusModule: "Module 1: The Modern Media Business Model & Institutional Governance",
     keyTopics: ["Boardroom Governance", "Editorial Independence", "Corporate Media Trust", "Policy & Regulation"],
@@ -55,7 +57,8 @@ const facultyMembers: FacultyMember[] = [
     category: "Corporate Comms",
     domain: "Brand Architecture & Influence",
     accentColor: "from-amber-600 to-amber-800 border-amber-500",
-    image: "/speakers/tunde-lawanson-portrait.png",
+    image: "/speakers/Tunde%20Lawanson%20Head,%20Marketing%20&%20Corporate%20Communications,%20First%20HoldCo%20Plc.png",
+    imagePosition: "center 10%",
     bio: "Head of Marketing & Corporate Communications at First HoldCo Plc. A distinguished brand strategist leading corporate narrative, enterprise stakeholder management, and reputation architecture for premier African financial institutions.",
     focusModule: "Module 3: Brand Positioning, Strategic Comms & Corporate Influence",
     keyTopics: ["Enterprise Brand Building", "Crisis Communications", "Corporate Partnerships", "Narrative Dominance"],
@@ -70,12 +73,28 @@ const facultyMembers: FacultyMember[] = [
     category: "Surprise Keynote",
     domain: "Continental Media Expansion",
     accentColor: "from-sky-600 to-sky-800 border-sky-400",
-    image: "/speakers/mystery-1-portrait.png",
+    image: "/speakers/guess-the-speaker.png",
+    imagePosition: "center center",
     isMystery: true,
     mysteryHint: "Founding visionary and chief executive behind one of West Africa's most influential media, tech, and entertainment conglomerates.",
     bio: "A headline media chief executive and industry pioneer whose identity will be unveiled exclusively to registered delegates prior to commencement.",
     focusModule: "Opening Keynote: The Next Frontier for African Media Empires",
     keyTopics: ["Visionary Leadership", "Cross-Border Scaling", "Mergers & Capital", "Disruption Defense"],
+    type: "flier"
+  },
+  {
+    id: "tolulope-olorundero",
+    name: "Tolulope Olorundero",
+    title: "Founder & Principal Consultant",
+    organisation: "Mosron Communications",
+    category: "Strategic Comms",
+    domain: "B2B Strategic Comms & Executive Positioning",
+    accentColor: "from-amber-600 to-amber-800 border-amber-500",
+    image: "/speakers/Tolulope-Olorundero.jpg",
+    imagePosition: "center 15%",
+    bio: "Founder and Principal Consultant at Mosron Communications, an award-winning bespoke public relations and strategic communications consultancy in Lagos, and Founder/Executive Director of PRWF Global. Listed on the GLG PR Power List of Top 50 PR Professionals and named PR Agency of the Year at LaPRIGA 2025. Widely recognized authority on executive positioning, thought leadership architecture, crisis management, and B2B corporate communications.",
+    focusModule: "Module 3: Strategic Communications, Executive Positioning & Crisis Governance",
+    keyTopics: ["Executive Positioning", "B2B Strategic Communications", "Crisis Preparedness", "Corporate Reputation Architecture"],
     type: "flier"
   },
   {
@@ -86,7 +105,8 @@ const facultyMembers: FacultyMember[] = [
     category: "Content Strategy",
     domain: "Film, TV & Visual Intellectual Property",
     accentColor: "from-slate-600 to-slate-800 border-slate-400",
-    image: "/speakers/femi-ipadeola-portrait.png",
+    image: "/speakers/WhatsApp%20Image%202026-09-11%20at%2014.47.37.jpeg",
+    imagePosition: "center 12%",
     bio: "Content Lead at Boom Africa Films & Television, certified executive coach, and board director. Specialist in high-end video storytelling, audience monetization, production syndication, and scalable studio operations.",
     focusModule: "Module 2: Content Strategy, Film IP & Broadcast Innovation",
     keyTopics: ["Original IP Monetization", "Studio Production Models", "Streaming Economics", "Audience Retention"],
@@ -100,7 +120,8 @@ const facultyMembers: FacultyMember[] = [
     category: "Enterprise Risk",
     domain: "Financial Governance & Compliance",
     accentColor: "from-orange-600 to-orange-800 border-orange-500",
-    image: "/speakers/bode-oguntoke-portrait.png",
+    image: "/speakers/Bode-Oguntoke-scaled.webp",
+    imagePosition: "50% 12%",
     bio: "Head of Internal Audit at FBN Holdings Plc. Veteran authority on financial integrity, audit committees, fraud prevention, compliance frameworks, and enterprise sustainability in highly scrutinized sectors.",
     focusModule: "Module 4: Financial Governance, Risk Mitigation & Audit Defense",
     keyTopics: ["Cash Flow Governance", "Audit Controls", "Enterprise Risk Management", "Fiscal Compliance"],
@@ -116,7 +137,8 @@ const facultyMembers: FacultyMember[] = [
     category: "Public Relations",
     domain: "Strategic Advocacy & Public Affairs",
     accentColor: "from-orange-600 to-orange-800 border-orange-500",
-    image: "/speakers/bolaji-abimbola-portrait.png",
+    image: "/speakers/Bolaji%20Abimbola,%20Chief%20Executive%20Officer,%20%20Integrated%20Indigo%20Limited..png",
+    imagePosition: "center 12%",
     bio: "Chief Executive Officer at Integrated Indigo Limited (Indigo PR), one of Nigeria's foremost strategic communication and public relations advisory firms, managing multi-billion Naira market narratives for top multinationals.",
     focusModule: "Module 5: Commercial PR, Advocacy & Media Monetization Models",
     keyTopics: ["Strategic PR Architecture", "Sponsorship & Advertising", "Government Relations", "Crisis Management"],
@@ -131,7 +153,8 @@ const facultyMembers: FacultyMember[] = [
     category: "Platform Innovation",
     domain: "AI Workflows & Digital Scaling",
     accentColor: "from-slate-600 to-slate-800 border-slate-400",
-    image: "/speakers/mystery-2-portrait.png",
+    image: "/speakers/guess-the-speaker.png",
+    imagePosition: "center center",
     isMystery: true,
     mysteryHint: "Pioneering media executive and technologist celebrated for deploying AI-assisted newsroom architectures and high-growth digital subscription funnels.",
     bio: "A headline digital media executive and platform strategist whose identity will be unveiled exclusively to registered delegates prior to commencement.",
@@ -147,7 +170,8 @@ const facultyMembers: FacultyMember[] = [
     category: "Tech Journalism",
     domain: "Digital Native Media & Monetization",
     accentColor: "from-sky-600 to-sky-800 border-sky-400",
-    image: "/speakers/david-afolayan-portrait.png",
+    image: "/speakers/WhatsApp%20Image%202026-09-11%20at%2014.46.44.jpeg",
+    imagePosition: "center 12%",
     bio: "Co-founder and Editor-in-Chief at Technext, one of Africa's fastest-growing tech and business media publications. Expert in data journalism, digital newsroom efficiency, newsletter growth, and community monetisation.",
     focusModule: "Module 6: Digital-First Newsrooms, Tech Platforms & Audience Scaling",
     keyTopics: ["Traffic Monetization", "Digital Productization", "Data Journalism", "Creator Economies"],
@@ -161,7 +185,8 @@ const facultyMembers: FacultyMember[] = [
     category: "Business Architecture",
     domain: "Enterprise Scale & Revenue Engineering",
     accentColor: "from-amber-600 to-amber-800 border-amber-500",
-    image: "/speakers/ezekiel-solesi-portrait.png",
+    image: "/speakers/WhatsApp%20Image%202026-05-04%20at%2012.36.38%20PM.jpeg",
+    imagePosition: "58% 22%",
     bio: "Founder & CEO of LIMBsimple, serial entrepreneur, author, and respected business model strategist. Has architected commercial scaling models for over 2,500 businesses across media, technology, and consumer services.",
     focusModule: "Module 7: Business Model Innovation & Revenue Engineering for Media",
     keyTopics: ["Multi-Stream Monetization", "Margin Optimization", "Operational Systems", "Scale Execution"],
@@ -176,39 +201,26 @@ const facultyMembers: FacultyMember[] = [
     category: "Commercial Scale",
     domain: "Broadcast P&L & Syndicated Distribution",
     accentColor: "from-blue-700 to-blue-900 border-blue-500",
-    image: "/speakers/mystery-3-portrait.png",
+    image: "/speakers/guess-the-speaker.png",
+    imagePosition: "center center",
     isMystery: true,
     mysteryHint: "High-ranking media proprietor and broadcast managing director with an illustrious track record of commercial syndication, multi-network expansion, and advertising dominance.",
     bio: "A prominent broadcast enterprise chief executive with decades of leadership across television, radio syndication, and digital streaming.",
     focusModule: "Module 8: Monetisation Models for Modern Media",
     keyTopics: ["Broadcast Economics", "Syndicated Distribution", "Subscription Design", "Media Valuation"],
     type: "flier"
-  },
-
-  // --- ACADEMIC & ADVISORY COUNCIL (Supporting Faculty) ---
-  {
-    id: "tolulope-olorundero",
-    name: "Tolulope Olorundero",
-    title: "Founder & Principal Consultant",
-    organisation: "Mosron Communications & PR Primus",
-    category: "Strategic Communications",
-    domain: "Corporate Reputation & Executive Visibility",
-    accentColor: "from-navy-800 to-navy-950 border-orange-500",
-    image: "/logos/mosron.png",
-    bio: "Founder of Mosron Communications and PR Primus. Leading consultant in executive thought leadership, crisis communications, and corporate branding across telecommunications, real estate, and FMCG sectors.",
-    focusModule: "Executive Workshop: Elevating CEO Visibility & Institutional Authority",
-    keyTopics: ["CEO Positioning", "Crisis Playbooks", "Media Relations", "Reputation Valuation"],
-    type: "advisory"
   }
 ];
 
 export function Faculty() {
   const [selectedMember, setSelectedMember] = useState<FacultyMember | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'flier' | 'advisory'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'announced' | 'mystery'>('all');
 
   const filteredMembers = facultyMembers.filter(member => {
     if (activeTab === 'all') return true;
-    return member.type === activeTab;
+    if (activeTab === 'announced') return !member.isMystery;
+    if (activeTab === 'mystery') return member.isMystery;
+    return true;
   });
 
   const scrollAnimation = {
@@ -265,24 +277,24 @@ export function Faculty() {
                 All Faculty ({facultyMembers.length})
               </button>
               <button
-                onClick={() => setActiveTab('flier')}
+                onClick={() => setActiveTab('announced')}
                 className={`px-3.5 py-2 text-xs font-semibold rounded transition-all ${
-                  activeTab === 'flier' 
+                  activeTab === 'announced' 
                     ? 'bg-orange-500 text-white shadow-md' 
                     : 'text-cream-50/70 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Masterclass Faculty ({facultyMembers.filter(m => m.type === 'flier').length})
+                Distinguished Faculty ({facultyMembers.filter(m => !m.isMystery).length})
               </button>
               <button
-                onClick={() => setActiveTab('advisory')}
+                onClick={() => setActiveTab('mystery')}
                 className={`px-3.5 py-2 text-xs font-semibold rounded transition-all ${
-                  activeTab === 'advisory' 
+                  activeTab === 'mystery' 
                     ? 'bg-orange-500 text-white shadow-md' 
                     : 'text-cream-50/70 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Advisory Council ({facultyMembers.filter(m => m.type === 'advisory').length})
+                Special Guest Keynotes ({facultyMembers.filter(m => m.isMystery).length})
               </button>
             </div>
           </div>
@@ -303,31 +315,19 @@ export function Faculty() {
                   }`}
                 >
                   {/* Portrait Stage */}
-                  <div className="relative aspect-[3/4] w-full overflow-hidden bg-navy-950 flex items-center justify-center">
+                  <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#000526] flex items-center justify-center">
                     {/* Background Glow */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent opacity-80 z-10" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent opacity-80 z-10 pointer-events-none" />
 
-                    {member.type === 'advisory' ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-white/5 group-hover:bg-white/10 transition-colors">
-                        <img 
-                          src={member.image} 
-                          alt={member.name}
-                          className="max-h-20 w-auto max-w-[80%] object-contain filter brightness-110 drop-shadow-md group-hover:scale-105 transition-transform" 
-                        />
-                        <span className="mt-4 text-[10px] uppercase tracking-widest font-bold text-orange-400/90 text-center">
-                          Advisory Fellow
-                        </span>
-                      </div>
-                    ) : (
-                      <img
-                        src={member.image}
-                        alt={member.name}
-                        className={`w-full h-full object-cover object-top transition-transform duration-500 ${
-                          isMystery ? 'scale-95 group-hover:scale-100 opacity-90' : 'group-hover:scale-105'
-                        }`}
-                        loading="lazy"
-                      />
-                    )}
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      style={{ objectPosition: member.imagePosition || 'center top' }}
+                      className={`w-full h-full object-cover transition-transform duration-500 [image-rendering:-webkit-optimize-contrast] ${
+                        isMystery ? 'opacity-95 group-hover:opacity-100 group-hover:scale-105' : 'group-hover:scale-105'
+                      }`}
+                      loading="lazy"
+                    />
 
                     {/* Mystery Overlay Clue Badge */}
                     {isMystery && (
@@ -456,7 +456,8 @@ export function Faculty() {
                     <img
                       src={selectedMember.image}
                       alt={selectedMember.name}
-                      className="w-full h-full object-cover object-top"
+                      style={{ objectPosition: selectedMember.imagePosition || 'center top' }}
+                      className="w-full h-full object-cover"
                     />
                   </div>
 

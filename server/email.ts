@@ -239,7 +239,7 @@ export async function sendVerificationOtpEmail(toEmail: string, code: string): P
             </p>
           </div>
           <div style="background: #f8fafc; padding: 16px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8;">
-            &copy; 2026 EnterpriseCEO &bull; In Partnership with Pan-Atlantic University
+            &copy; 2026 EnterpriseCEO &bull; Media Owners &amp; Executives Masterclass
           </div>
         </div>
       </body>

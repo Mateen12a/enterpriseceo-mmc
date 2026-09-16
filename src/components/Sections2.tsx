@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowUpRight, ShieldCheck, Mail } from 'lucide-react';
+import { ArrowUpRight, ShieldCheck, Mail, Phone } from 'lucide-react';
 import { useApplyModal } from '../context/ApplyModalContext';
 import { PageContainer } from './Layout';
 
@@ -100,7 +100,7 @@ export function Sponsorship() {
             <div className="bg-grey-100/50 p-8 border border-grey-200 flex flex-col justify-between">
               <div>
                 <h3 className="text-2xl font-serif text-navy-900 mb-6">Sponsor Benefits</h3>
-                <ul className="space-y-4 mb-8">
+                <ul className="space-y-4">
                   {[
                     'Direct access to 30+ senior media executives and decision-makers',
                     'Strategic brand positioning within a premium, invitation-only environment',
@@ -115,14 +115,111 @@ export function Sponsorship() {
                   ))}
                 </ul>
               </div>
+            </div>
+          </motion.div>
 
-              <a 
-                href="mailto:hello@enterpriseceo.africa?subject=Sponsorship%20Enquiry%20-%20Media%20Owners%20%26%20Executives%20Masterclass"
-                className="w-full text-center bg-navy-900 hover:bg-navy-800 text-white font-semibold text-sm px-6 py-3.5 rounded-md transition-colors flex items-center justify-center gap-2"
-              >
-                <Mail className="w-4 h-4 text-orange-400" />
-                Enquire About Sponsorship
-              </a>
+          {/* Direct Partnership Liaisons */}
+          <motion.div {...scrollAnimation} className="mt-10 bg-navy-900 text-white p-8 md:p-10 border-t-4 border-orange-500 shadow-xl">
+            <div className="max-w-3xl mb-8">
+              <span className="text-xs font-bold uppercase tracking-widest text-orange-400 block mb-1">
+                Direct Partnership Liaisons
+              </span>
+              <h3 className="text-2xl md:text-3xl font-serif text-white mb-2">
+                Speak to Our Team
+              </h3>
+              <p className="text-sm md:text-base text-cream-50/80 leading-relaxed font-light">
+                To discuss bespoke sponsorship tiers, brand integration, or strategic partnerships, connect directly with our masterclass directors:
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Tumilara */}
+              <div className="bg-white/5 border border-white/10 p-6 rounded-sm hover:border-orange-500/60 transition-colors">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-400 flex items-center justify-center font-bold text-sm">
+                    T
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-white tracking-tight">Tumilara</h4>
+                    <span className="text-xs text-cream-50/60 font-medium">Sponsorships &amp; Enquiries</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-xs text-cream-50/90 pt-2 border-t border-white/10">
+                  <div className="flex items-start gap-2.5">
+                    <Mail className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-[10px] text-cream-50/50 uppercase block font-bold tracking-wider">Email</span>
+                      <a 
+                        href="mailto:tumilara.amosu@enterpriseceo.africa?subject=Sponsorship%20%26%20Enquiries%20-%20EnterpriseCEO%20Masterclass"
+                        className="text-white hover:text-orange-400 underline underline-offset-2 transition-colors font-medium break-all"
+                      >
+                        tumilara.amosu@enterpriseceo.africa
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 pt-1">
+                    <Phone className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-[10px] text-cream-50/50 uppercase block font-bold tracking-wider">Phone</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <a href="tel:+2347061737282" className="text-cream-50/90 hover:text-orange-400 transition-colors font-medium">
+                          +234 (0) 706 173 7282
+                        </a>
+                        <span className="text-white/30">|</span>
+                        <a href="tel:+2348057544695" className="text-cream-50/90 hover:text-orange-400 transition-colors font-medium">
+                          +234 (0) 805 754 4695
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Aaron */}
+              <div className="bg-white/5 border border-white/10 p-6 rounded-sm hover:border-orange-500/60 transition-colors">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-400 flex items-center justify-center font-bold text-sm">
+                    A
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-white tracking-tight">Aaron</h4>
+                    <span className="text-xs text-cream-50/60 font-medium">Partnerships &amp; Enquiries</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-xs text-cream-50/90 pt-2 border-t border-white/10">
+                  <div className="flex items-start gap-2.5">
+                    <Mail className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-[10px] text-cream-50/50 uppercase block font-bold tracking-wider">Email</span>
+                      <a 
+                        href="mailto:aaron.abumere@enterpriseceo.africa?subject=Sponsorship%20%26%20Enquiries%20-%20EnterpriseCEO%20Masterclass"
+                        className="text-white hover:text-orange-400 underline underline-offset-2 transition-colors font-medium break-all"
+                      >
+                        aaron.abumere@enterpriseceo.africa
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 pt-1">
+                    <Phone className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-[10px] text-cream-50/50 uppercase block font-bold tracking-wider">Phone</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <a href="tel:+2349067915609" className="text-cream-50/90 hover:text-orange-400 transition-colors font-medium">
+                          +234 (0) 906 791 5609
+                        </a>
+                        <span className="text-white/30">|</span>
+                        <a href="tel:+2348057544695" className="text-cream-50/90 hover:text-orange-400 transition-colors font-medium">
+                          +234 (0) 805 754 4695
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
         </PageContainer>

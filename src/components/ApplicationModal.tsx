@@ -792,8 +792,7 @@ export function ApplicationModal() {
                           </span>
                         </div>
                         <div className="text-left">
-                          <span className="text-xs font-bold text-navy-900 block">Pan-Atlantic Certified</span>
-                          <span className="text-[10px] text-grey-500">Pay online or in-person</span>
+                          <span className="text-xs font-semibold text-navy-900 block">Pay online</span>
                         </div>
                       </div>
                       <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">

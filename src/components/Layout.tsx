@@ -254,11 +254,20 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
           </div>
           
           <div className="space-y-4">
-            <h4 className="font-bold text-base text-orange-400 mb-4 tracking-wide uppercase text-xs">Contact</h4>
-            <p><a href="mailto:hello@enterpriseceo.africa" className="text-cream-50/80 hover:text-white transition-colors">hello@enterpriseceo.africa</a></p>
-            <p className="text-cream-50/80">+234 809 079 9988</p>
-            <p className="text-cream-50/80">+234 806 345 0905</p>
-            <p className="pt-2"><a href="https://enterpriseceo.africa" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-4">enterpriseceo.africa</a></p>
+            <h4 className="font-bold text-base text-orange-400 mb-4 tracking-wide uppercase text-xs">Sponsorships &amp; Enquiries</h4>
+            <div className="text-xs space-y-3">
+              <div>
+                <p className="font-bold text-white text-xs">Tumilara</p>
+                <p><a href="mailto:tumilara.amosu@enterpriseceo.africa" className="text-cream-50/80 hover:text-white transition-colors">tumilara.amosu@enterpriseceo.africa</a></p>
+                <p className="text-cream-50/70 text-[11px]">+234 (0) 706 173 7282 | +234 (0) 805 754 4695</p>
+              </div>
+              <div>
+                <p className="font-bold text-white text-xs">Aaron</p>
+                <p><a href="mailto:aaron.abumere@enterpriseceo.africa" className="text-cream-50/80 hover:text-white transition-colors">aaron.abumere@enterpriseceo.africa</a></p>
+                <p className="text-cream-50/70 text-[11px]">+234 (0) 906 791 5609 | +234 (0) 805 754 4695</p>
+              </div>
+            </div>
+            <p className="pt-1"><a href="https://enterpriseceo.africa" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-4 text-xs">enterpriseceo.africa</a></p>
           </div>
 
           <div className="space-y-4">

@@ -182,7 +182,7 @@ Submitted details:
 - Job Title: ${participant.jobTitle}
 - Organisation: ${participant.organisation} (${participant.organisationType}${participant.otherOrgType ? ` - ${participant.otherOrgType}` : ''})
 
-If you have urgent inquiries, you can reach out to our masterclass secretariat at hello@enterpriseceo.africa or call +234 809 079 9988.
+If you have urgent inquiries, you can reach out to our masterclass secretariat at hello@enterpriseceo.africa or call +234 (0) 706 173 7282 | +234 (0) 906 791 5609.
 
 Warm regards,
 The EnterpriseCEO Admissions Committee

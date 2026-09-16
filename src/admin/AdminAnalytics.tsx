@@ -81,7 +81,7 @@ export function AdminAnalytics({ analytics, isLoading }: AdminAnalyticsProps) {
           </p>
         </div>
         <div className="text-xs bg-grey-100 text-navy-900 px-3 py-1.5 rounded font-semibold border border-grey-200">
-          Class Target: 50 Executive Seats
+          Class Target: 30 Executive Seats
         </div>
       </div>
 

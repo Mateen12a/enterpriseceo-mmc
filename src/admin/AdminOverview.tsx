@@ -39,7 +39,7 @@ export function AdminOverview({
   const paidCount = analytics?.paymentCounts?.paid ?? 0;
   const payInPersonCount = analytics?.paymentCounts?.pay_in_person ?? 0;
   const unpaidCount = analytics?.paymentCounts?.unpaid ?? Math.max(0, total - paidCount - payInPersonCount);
-  const target = analytics?.capacityTarget ?? 50;
+  const target = analytics?.capacityTarget ?? 30;
   const capacityPct = Math.min(100, Math.round((invited / target) * 100));
 
   return (
@@ -49,7 +49,7 @@ export function AdminOverview({
         <div>
           <h1 className="text-xl font-bold text-navy-900 tracking-tight">Executive Admissions Overview</h1>
           <p className="text-xs text-grey-600 mt-0.5">
-            EnterpriseCEO Media Owners &amp; Executives Masterclass &bull; Target Cohort: 50 Executive Seats (All applicants accommodated for internal review)
+            EnterpriseCEO Media Owners &amp; Executives Masterclass &bull; Open admissions &mdash; every complete application is accommodated
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -85,7 +85,7 @@ export function AdminOverview({
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-3xl font-bold text-navy-900">{total}</span>
-            <span className="text-xs text-grey-500">unlimited capacity</span>
+            <span className="text-xs text-grey-500">all accommodated</span>
           </div>
           <div className="mt-3 text-[11px] text-grey-500 flex items-center justify-between border-t border-grey-100 pt-2">
             <span>Reviewed: {reviewed}</span>

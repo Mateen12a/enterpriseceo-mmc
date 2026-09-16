@@ -30,38 +30,26 @@ async function startServer() {
     explicitOrigins.push(process.env.APP_URL.trim());
   }
 
+  // Same-origin SPA plus any explicitly allow-listed origins (APP_URL / CORS_ALLOWED_ORIGINS).
+  // Browser same-origin and non-browser requests send no Origin header, so they pass.
   const isOriginAllowed = (origin?: string): boolean => {
-    // Requests with no origin (e.g. mobile webviews, curl, same-origin, server-side)
     if (!origin) return true;
-
-    // Check explicitly configured origins
     if (explicitOrigins.some(allowed => allowed.toLowerCase() === origin.toLowerCase())) {
       return true;
     }
-
     try {
-      const url = new URL(origin);
-      const hostname = url.hostname.toLowerCase();
-      // Allow Google Cloud Run domains (*.run.app)
-      if (hostname.endsWith('.run.app')) return true;
-      // Allow EnterpriseCEO domains
+      const hostname = new URL(origin).hostname.toLowerCase();
       if (hostname === 'enterpriseceo.africa' || hostname.endsWith('.enterpriseceo.africa')) return true;
-      // Allow local development
       if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
     } catch {
-      // Fallback
+      return false;
     }
-
-    return true;
+    return false;
   };
 
   const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
-      if (isOriginAllowed(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, true);
-      }
+      callback(null, isOriginAllowed(origin));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

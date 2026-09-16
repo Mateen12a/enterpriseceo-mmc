@@ -181,7 +181,7 @@ apiRouter.post('/verify-email/confirm', (req: Request, res: Response) => {
  */
 apiRouter.get('/paystack/config', (_req: Request, res: Response) => {
   const publicKey = process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder_key';
-  const amountNaira = parseInt(process.env.PAYSTACK_AMOUNT_NAIRA || '250000', 10);
+  const amountNaira = parseInt(process.env.PAYSTACK_AMOUNT_NAIRA || '500000', 10);
 
   res.json({
     success: true,
@@ -211,7 +211,7 @@ apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
   try {
     const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
     let paymentVerified = true;
-    let verifiedAmount = amount || 250000;
+    let verifiedAmount = amount || 500000;
 
     // If live/test secret key is provided, perform upstream Paystack API verification
     if (paystackSecret && paystackSecret.startsWith('sk_')) {
@@ -230,7 +230,7 @@ apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
           });
           return;
         }
-        verifiedAmount = (verifyData.data?.amount || 25000000) / 100;
+        verifiedAmount = (verifyData.data?.amount || 50000000) / 100;
       } catch (upstreamErr) {
         console.warn('[Paystack Upstream Verify Warning]:', upstreamErr);
       }
@@ -284,51 +284,6 @@ apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
       success: false,
       error: 'An internal error occurred while recording payment confirmation.',
     });
-  }
-});
-
-/**
- * PUBLIC: POST /api/participants/:id/pay-offline
- * Records "Pay in Person" / Invoice request so secretariat can follow up
- */
-apiRouter.post('/participants/:id/pay-offline', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { method = 'in_person' } = req.body;
-
-  try {
-    let updated: any = null;
-
-    if (isUsingMongoDB()) {
-      const doc = await MongoParticipantModel.findByIdAndUpdate(
-        id,
-        {
-          paymentStatus: 'pay_in_person',
-          paymentMethod: 'offline',
-          $addToSet: { adminTags: 'Pay in Person' },
-        },
-        { new: true }
-      );
-      updated = doc ? doc.toJSON() : null;
-    } else {
-      updated = await memoryStore.updateParticipantPayment(id, {
-        paymentStatus: 'pay_in_person',
-        paymentMethod: 'offline',
-      });
-    }
-
-    if (!updated) {
-      res.status(404).json({ success: false, error: 'Participant not found.' });
-      return;
-    }
-
-    res.json({
-      success: true,
-      message: 'In-person payment preference registered. The admissions team has been notified.',
-      participant: updated,
-    });
-  } catch (err: any) {
-    console.error('[Pay Offline Error]:', err);
-    res.status(500).json({ success: false, error: 'Failed to record offline payment preference.' });
   }
 });
 
@@ -443,7 +398,8 @@ apiRouter.post('/register', async (req: Request, res: Response) => {
       status: 'pending',
       paymentStatus: 'unpaid',
       adminTags: [],
-      emailVerified: Boolean(req.body.emailVerified),
+      // Server-side truth: only mark verified if this email actually completed OTP verification.
+      emailVerified: verifiedEmails.has(String(email).trim().toLowerCase()),
     };
 
     let participant: IParticipant;

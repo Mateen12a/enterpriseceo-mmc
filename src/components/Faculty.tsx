@@ -12,6 +12,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { PageContainer } from './Layout';
+import { useApplyModal } from '../context/ApplyModalContext';
 
 export interface FacultyMember {
   id: string;
@@ -215,6 +216,7 @@ const facultyMembers: FacultyMember[] = [
 export function Faculty() {
   const [selectedMember, setSelectedMember] = useState<FacultyMember | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'announced' | 'mystery'>('all');
+  const { openApplyModal } = useApplyModal();
 
   const filteredMembers = facultyMembers.filter(member => {
     if (activeTab === 'all') return true;
@@ -401,17 +403,13 @@ export function Faculty() {
               </div>
             </div>
 
-            <a
-              href="#apply"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="shrink-0 inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-5 py-2.5 rounded-md border border-white/20 transition-colors"
+            <button
+              onClick={openApplyModal}
+              className="shrink-0 inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-5 py-2.5 rounded-md border border-white/20 transition-colors cursor-pointer"
             >
               Reserve an Executive Seat
               <ArrowUpRight className="w-4 h-4 text-orange-400" />
-            </a>
+            </button>
           </div>
         </motion.div>
       </PageContainer>
@@ -554,16 +552,7 @@ export function Faculty() {
                   <button
                     onClick={() => {
                       setSelectedMember(null);
-                      // Trigger apply modal
-                      const btn = document.querySelector('[data-apply-trigger]') as HTMLButtonElement;
-                      if (btn) btn.click();
-                      else {
-                        const heroBtn = document.querySelector('#hero button') as HTMLButtonElement;
-                        if (heroBtn) heroBtn.click();
-                        else {
-                          window.location.hash = 'apply';
-                        }
-                      }
+                      openApplyModal();
                     }}
                     className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs px-6 py-3 rounded-md shadow-lg transition-all flex items-center justify-center gap-1.5"
                   >

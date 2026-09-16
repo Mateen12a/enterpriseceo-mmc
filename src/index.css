@@ -10,10 +10,24 @@
   --color-orange-600: #E8720C;
   
   --color-cream-50: #FAF3E7;
+  --color-grey-50: #F9FAFB;
   --color-grey-100: #EDEDF2;
+  --color-grey-200: #E5E7EB;
+  --color-grey-300: #D1D5DB;
+  --color-grey-400: #9CA3AF;
+  --color-grey-500: #6B7280;
+  --color-grey-600: #4B5563;
+  --color-grey-700: #374151;
   --color-ink-900: #111827;
   --color-white: #FFFFFF;
   
+  --color-navy-50: #EEF0FB;
+  --color-navy-200: #B6BCEC;
+  --color-navy-300: #9AA3E3;
+  --color-navy-700: #1A1F7A;
+  --color-navy-950: #060A38;
+  --color-cream-100: #F3E6D2;
+
   --color-mustard-600: #C1780C;
   --color-teal-600: #1C7A5D;
   --color-maroon-700: #7A1F1F;

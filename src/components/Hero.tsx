@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowUpRight, Shield, Users2 } from 'lucide-react';
 import { useApplyModal } from '../context/ApplyModalContext';
 import { PageContainer } from './Layout';
@@ -7,6 +7,11 @@ import { motion } from 'motion/react';
 export function Hero() {
   const { openApplyModal } = useApplyModal();
   const [activePhoto, setActivePhoto] = useState(0);
+
+  const prefersReducedMotion = useMemo(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    []
+  );
 
   const atmospherePhotos = [
     {
@@ -31,6 +36,33 @@ export function Hero() {
 
   return (
     <section className="bg-navy-900 text-white pt-32 pb-20 md:pb-24 relative overflow-hidden" id="overview">
+      {/* Cinematic past-event footage background (FT Live–style hero) */}
+      {prefersReducedMotion ? (
+        <img
+          src="/p-event/photo-1.jpg"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 z-0 h-full w-full object-cover"
+        />
+      ) : (
+        <video
+          className="absolute inset-0 z-0 h-full w-full object-cover"
+          src="/bg-video/highlight-2022.mp4"
+          poster="/p-event/photo-1.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Readability scrims — heaviest behind the headline copy, lighter to the right */}
+      <div className="absolute inset-0 z-0 bg-navy-900/55" aria-hidden="true" />
+      <div className="absolute inset-0 z-0 bg-gradient-to-r from-navy-900/95 via-navy-900/75 to-navy-900/25" aria-hidden="true" />
+      <div className="absolute inset-x-0 bottom-0 h-24 z-0 bg-gradient-to-t from-navy-900 to-transparent" aria-hidden="true" />
+
       {/* Graphic motif placeholder */}
       <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
         <svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">

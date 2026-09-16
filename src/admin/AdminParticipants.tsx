@@ -104,7 +104,7 @@ export function AdminParticipants({
   // Drawer Payment Form State
   const [editPaymentStatus, setEditPaymentStatus] = useState<'paid' | 'unpaid' | 'pay_in_person'>('unpaid');
   const [editPaymentRef, setEditPaymentRef] = useState('');
-  const [editPaymentAmount, setEditPaymentAmount] = useState<string>('250000');
+  const [editPaymentAmount, setEditPaymentAmount] = useState<string>('500000');
   const [editPaymentMethod, setEditPaymentMethod] = useState<'paystack' | 'offline' | 'manual'>('offline');
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState<string | null>(null);
 
@@ -118,7 +118,7 @@ export function AdminParticipants({
     if (selectedParticipant) {
       setEditPaymentStatus(selectedParticipant.paymentStatus || 'unpaid');
       setEditPaymentRef(selectedParticipant.paymentReference || '');
-      setEditPaymentAmount(selectedParticipant.paymentAmount ? String(selectedParticipant.paymentAmount) : '250000');
+      setEditPaymentAmount(selectedParticipant.paymentAmount ? String(selectedParticipant.paymentAmount) : '500000');
       setEditPaymentMethod(selectedParticipant.paymentMethod || 'offline');
       setCurrentTags(selectedParticipant.adminTags || []);
       setPaymentSuccessMsg(null);
@@ -257,7 +257,7 @@ export function AdminParticipants({
           {/* Export Button & Capacity Notice */}
           <div className="flex items-center gap-2.5">
             <span className="hidden sm:inline-block text-[11px] text-grey-500 font-medium">
-              Accommodating <strong>{total}</strong> applications (no cutoff limit)
+              All <strong>{total}</strong> applications accommodated &mdash; no seat cap
             </span>
             <button
               onClick={onExportCsv}
@@ -660,7 +660,7 @@ export function AdminParticipants({
                         type="number"
                         value={editPaymentAmount}
                         onChange={e => setEditPaymentAmount(e.target.value)}
-                        placeholder="250000"
+                        placeholder="500000"
                         className="w-full py-1.5 px-2 bg-white border border-navy-300 rounded text-xs text-navy-900"
                       />
                     </div>

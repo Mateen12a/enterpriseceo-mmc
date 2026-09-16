@@ -7,11 +7,9 @@ import {
   Calendar, 
   ShieldCheck, 
   CreditCard, 
-  Building, 
   Check, 
   ArrowRight, 
   AlertCircle, 
-  RefreshCw,
   MailCheck,
   Send
 } from 'lucide-react';
@@ -38,7 +36,7 @@ const DISPOSABLE_EMAIL_DOMAINS = new Set([
   'mytemp.email', 'disposablemail.com', 'mohmal.com', 'tempmailaddress.com'
 ]);
 
-type ModalStep = 'form' | 'payment' | 'paid_success' | 'offline_success';
+type ModalStep = 'form' | 'payment' | 'paid_success';
 
 export function ApplicationModal() {
   const { isOpen, closeApplyModal } = useApplyModal();
@@ -87,12 +85,10 @@ export function ApplicationModal() {
     formattedAmount: string;
   }>({
     publicKey: 'pk_test_placeholder_key',
-    amount: 250000,
-    formattedAmount: '₦250,000',
+    amount: 500000,
+    formattedAmount: '₦500,000',
   });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [isRecordingOffline, setIsRecordingOffline] = useState(false);
-  const [offlinePaymentNotes, setOfflinePaymentNotes] = useState('');
 
   const firstInputRef = useRef<HTMLInputElement>(null);
 
@@ -142,7 +138,6 @@ export function ApplicationModal() {
       setSandboxOtp(null);
     }
   }, [isOpen, closeApplyModal]);
-
   // Handle email changes (reset verification if email changes)
   const handleEmailChange = (newEmail: string) => {
     setFormData(prev => ({ ...prev, email: newEmail }));
@@ -303,7 +298,7 @@ export function ApplicationModal() {
     }
   };
 
-  // Step 2A: Pay Online via Paystack Inline Popup
+  // Step 2: Pay Online via Paystack Inline Popup (the only payment path offered)
   const handlePayOnlineWithPaystack = () => {
     if (!registeredParticipant) return;
     setIsProcessingPayment(true);
@@ -394,35 +389,6 @@ export function ApplicationModal() {
     }
   };
 
-  // Step 2B: Pay in Person / Invoice Option
-  const handlePayInPerson = async () => {
-    if (!registeredParticipant) return;
-    setIsRecordingOffline(true);
-    setErrorMessage(null);
-
-    try {
-      const res = await fetch(`/api/participants/${registeredParticipant.id}/pay-offline`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          method: 'in_person',
-          notes: offlinePaymentNotes.trim() || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to record offline payment preference.');
-      }
-
-      setCurrentStep('offline_success');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Could not record offline preference.');
-    } finally {
-      setIsRecordingOffline(false);
-    }
-  };
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -469,12 +435,11 @@ export function ApplicationModal() {
                   {currentStep === 'form' && "Apply to Attend"}
                   {currentStep === 'payment' && "Application Received • Secure Your Seat"}
                   {currentStep === 'paid_success' && "Seat Confirmed • Welcome to the Masterclass"}
-                  {currentStep === 'offline_success' && "Application Received • Offline Payment Noted"}
                 </h3>
                 <p className="text-[11px] sm:text-xs text-cream-50/75 mt-1 leading-snug">
                   {currentStep === 'form' && "By invitation and selective registration. Media owners, publishers, and senior executives."}
-                  {currentStep === 'payment' && "Your registration has been saved. Complete payment online via Paystack or choose Pay in Person."}
-                  {(currentStep === 'paid_success' || currentStep === 'offline_success') && "2026 Executive Cohort Admissions • Confirmation Notice"}
+                  {currentStep === 'payment' && "Your registration has been saved. Complete payment securely online via Paystack to confirm your seat."}
+                  {currentStep === 'paid_success' && "2026 Executive Cohort Admissions • Confirmation Notice"}
                 </p>
               </div>
 
@@ -809,7 +774,7 @@ export function ApplicationModal() {
                       />
                       <div className="text-xs text-ink-900 leading-relaxed">
                         <span className="font-semibold text-navy-900">
-                          I understand that this is a paid executive masterclass. Upon submission, I can proceed with secure payment via Paystack or request in-person/invoice arrangement.
+                          I understand that this is a paid executive masterclass. Upon submission, I will complete payment securely online via Paystack to confirm my seat.
                         </span>{" "}
                         <span className="text-orange-600 font-bold">*</span>
                       </div>
@@ -914,8 +879,8 @@ export function ApplicationModal() {
                         </div>
                       </div>
 
-                      {/* Payment Options */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                      {/* Single Path: Secure Online Payment */}
+                      <div className="grid grid-cols-1 gap-4 pt-1">
                         {/* Option 1: Pay Online via Paystack */}
                         <div className="bg-white p-4 rounded-lg border-2 border-orange-500/80 shadow-sm flex flex-col justify-between space-y-4 relative">
                           <div className="absolute -top-2.5 right-3 bg-orange-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
@@ -949,36 +914,6 @@ export function ApplicationModal() {
                             )}
                           </button>
                         </div>
-
-                        {/* Option 2: Pay in Person / Invoice */}
-                        <div className="bg-white p-4 rounded-lg border border-grey-300 shadow-sm flex flex-col justify-between space-y-4">
-                          <div>
-                            <div className="flex items-center gap-2 text-navy-900 font-bold text-sm">
-                              <Building className="w-4 h-4 text-navy-700" />
-                              <span>Pay in Person / Invoice</span>
-                            </div>
-                            <p className="text-xs text-grey-600 mt-1.5 leading-relaxed">
-                              Prefer payment upon arrival or require an official corporate pro-forma invoice for your organisation's finance department? Select this option.
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handlePayInPerson}
-                            disabled={isRecordingOffline}
-                            className="w-full py-3 px-4 bg-navy-900 hover:bg-navy-800 active:scale-[0.98] text-white font-semibold text-xs rounded-lg transition-all shadow flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
-                          >
-                            {isRecordingOffline ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Registering Preference...
-                              </>
-                            ) : (
-                              <>
-                                <span>Request Pay in Person / Invoice</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
                       </div>
                     </div>
 
@@ -997,7 +932,7 @@ export function ApplicationModal() {
                 )}
 
                 {/* ------------------------------------------------------------- */}
-                {/* STEP 3A: PAID ONLINE SUCCESS                                  */}
+                {/* STEP 3: PAID ONLINE SUCCESS                                    */}
                 {/* ------------------------------------------------------------- */}
                 {currentStep === 'paid_success' && (
                   <motion.div
@@ -1038,63 +973,6 @@ export function ApplicationModal() {
                           Invited (Paid)
                         </span>
                       </div>
-                    </div>
-
-                    <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
-                      <AddToCalendar />
-                      <button
-                        type="button"
-                        onClick={closeApplyModal}
-                        className="bg-navy-900 hover:bg-navy-800 active:scale-95 text-white font-semibold px-6 py-2.5 rounded-md transition-all shadow-md text-sm cursor-pointer"
-                      >
-                        Return to Programme
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* ------------------------------------------------------------- */}
-                {/* STEP 3B: OFFLINE PAYMENT PREFERENCE RECORDED                  */}
-                {/* ------------------------------------------------------------- */}
-                {currentStep === 'offline_success' && (
-                  <motion.div
-                    key="offline-success-screen"
-                    initial={{ opacity: 0, scale: 0.95, y: 14 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.35 }}
-                    className="py-6 text-center space-y-5"
-                  >
-                    <div className="w-16 h-16 bg-orange-100 text-orange-600 border border-orange-300 rounded-full flex items-center justify-center mx-auto shadow-inner">
-                      <Building className="w-8 h-8" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-orange-700 bg-orange-50 px-3 py-1 rounded-full border border-orange-200 inline-block">
-                        Pay in Person / Invoice Requested
-                      </span>
-                      <h4 className="text-2xl font-serif font-bold text-navy-900">
-                        Preference Successfully Recorded
-                      </h4>
-                      <p className="text-ink-900/80 max-w-md mx-auto text-sm leading-relaxed">
-                        Your application is securely filed in our system with a <strong>Pay in Person</strong> tag.
-                      </p>
-                    </div>
-
-                    <div className="bg-cream-50/70 border border-navy-900/10 rounded-lg p-5 max-w-md mx-auto text-left space-y-3 text-xs">
-                      <h5 className="font-bold uppercase tracking-wider text-navy-900 flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-orange-500" />
-                        Next Steps for In-Person / Corporate Invoicing:
-                      </h5>
-                      <ul className="space-y-2 text-ink-900/80 leading-relaxed">
-                        <li className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                          <span>The EnterpriseCEO secretariat will reach out to <strong>{registeredParticipant?.email}</strong> with pro-forma invoice details.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                          <span>The admissions team can update your payment record in the system when payment is presented at the venue.</span>
-                        </li>
-                      </ul>
                     </div>
 
                     <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">

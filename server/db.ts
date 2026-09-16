@@ -321,10 +321,21 @@ export function isUsingMongoDB(): boolean {
 export async function initDatabase(): Promise<void> {
   const uri = process.env.MONGODB_URI;
   const adminEmail = process.env.ADMIN_INITIAL_EMAIL || 'admin@enterpriseceo.africa';
-  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || 'EnterpriseCEO2026!';
+  // Never seed a guessable password. In dev without ADMIN_INITIAL_PASSWORD the admin
+  // account simply is not created; in production the env var is mandatory.
+  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
 
-  // Always seed memory store so it's ready for instant access
-  await memoryStore.seedAdmin(adminEmail, adminPassword);
+  if (!adminPassword) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ADMIN_INITIAL_PASSWORD is required in production to create the initial admin account.');
+    }
+    console.warn('[Database] ADMIN_INITIAL_PASSWORD not set - no admin account will be seeded this boot.');
+  }
+
+  if (adminPassword) {
+    // Seed memory store so it's ready for instant access
+    await memoryStore.seedAdmin(adminEmail, adminPassword);
+  }
 
   if (!uri || uri.trim() === '') {
     console.log('[Database] MONGODB_URI not configured. Operating in high-performance local store mode.');
@@ -339,16 +350,18 @@ export async function initDatabase(): Promise<void> {
     console.log('[Database] Successfully connected to MongoDB Atlas cluster.');
 
     // Seed Admin in MongoDB if not present
-    const existingAdmin = await MongoAdminUserModel.findOne({ email: adminEmail.toLowerCase() });
-    if (!existingAdmin) {
-      const passwordHash = await bcrypt.hash(adminPassword, 10);
-      await MongoAdminUserModel.create({
-        email: adminEmail.toLowerCase(),
-        passwordHash,
-        name: 'EnterpriseCEO Administrator',
-        role: 'admin',
-      });
-      console.log(`[Database] Seeded initial admin account: ${adminEmail}`);
+    if (adminPassword) {
+      const existingAdmin = await MongoAdminUserModel.findOne({ email: adminEmail.toLowerCase() });
+      if (!existingAdmin) {
+        const passwordHash = await bcrypt.hash(adminPassword, 10);
+        await MongoAdminUserModel.create({
+          email: adminEmail.toLowerCase(),
+          passwordHash,
+          name: 'EnterpriseCEO Administrator',
+          role: 'admin',
+        });
+        console.log(`[Database] Seeded initial admin account: ${adminEmail}`);
+      }
     }
   } catch (err: any) {
     console.warn('[Database] Could not connect to MongoDB Atlas cluster:', err?.message);

@@ -9,19 +9,21 @@ import {
   ShieldCheck, 
   RefreshCw,
   Menu,
-  X
+  X,
+  Mail
 } from 'lucide-react';
 import { AdminLogin } from './AdminLogin';
 import { AdminOverview } from './AdminOverview';
 import { AdminParticipants } from './AdminParticipants';
 import { AdminAnalytics } from './AdminAnalytics';
+import { AdminEmails } from './AdminEmails';
 import { AdminParticipant, AdminAnalyticsData } from './types';
 
 interface AdminDashboardProps {
   onBackToPublic: () => void;
 }
 
-type TabType = 'overview' | 'participants' | 'analytics';
+type TabType = 'overview' | 'participants' | 'analytics' | 'emails';
 
 export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
   const [token, setToken] = useState<string | null>(() => {
@@ -143,8 +145,8 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
     setAdminUser(null);
   };
 
-  // CSV Export
-  const handleExportCsv = () => {
+  // CSV Export (fetch + blob so the Bearer token is sent; browser navigation cannot set headers)
+  const handleExportCsv = async () => {
     if (!token) return;
     const params = new URLSearchParams();
     if (searchQuery.trim()) params.append('search', searchQuery.trim());
@@ -155,8 +157,23 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
     if (dateFrom) params.append('dateFrom', dateFrom);
     if (dateTo) params.append('dateTo', dateTo);
 
-    // Trigger direct stream download
-    window.location.href = `/api/admin/export?${params.toString()}`;
+    try {
+      const res = await fetch(`/api/admin/export?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Export failed with status ${res.status}`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `masterclass-participants-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('CSV export failed:', err);
+    }
   };
 
   // Update Status
@@ -260,6 +277,7 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
     { id: 'overview', label: 'Admissions Overview', icon: LayoutDashboard },
     { id: 'participants', label: 'Participant Dossiers', icon: Users, badge: totalParticipants > 0 ? totalParticipants : null },
     { id: 'analytics', label: 'Class Analytics', icon: BarChart3 },
+    { id: 'emails', label: 'Email Logs', icon: Mail, badge: null },
   ];
 
   return (
@@ -485,6 +503,8 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
           {activeTab === 'analytics' && (
             <AdminAnalytics analytics={analytics} isLoading={isLoadingAnalytics} />
           )}
+
+          {activeTab === 'emails' && <AdminEmails token={token} />}
         </div>
       </main>
     </div>

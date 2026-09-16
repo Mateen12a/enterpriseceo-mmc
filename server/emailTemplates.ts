@@ -64,7 +64,7 @@ export function generateParticipantEmail(participant: IParticipant, baseUrl: str
               <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #FFF7ED; border-left: 4px solid #F97316; border-radius: 4px; margin: 24px 0;">
                 <tr>
                   <td style="padding: 16px 20px; font-size: 14px; line-height: 1.5; color: #9A3412;">
-                    <strong>Admissions Notice:</strong> Participation is strictly by invitation and selective registration, limited to a curated executive class of <strong>50 senior media leaders</strong>. Our admissions committee reviews each executive application to ensure a high-calibre peer network.
+                    <strong>Admissions Notice:</strong> Participation is strictly by invitation and selective registration, limited to a curated executive class of <strong>30 senior media leaders</strong>. Our admissions committee reviews each executive application to ensure a high-calibre peer network.
                   </td>
                 </tr>
               </table>

@@ -1,7 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'enterpriseceo-masterclass-jwt-secret-key-2026';
+const JWT_SECRET = (() => {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === 'production') {
+    // Fail fast rather than ship a forgeable secret. Set JWT_SECRET in the environment.
+    throw new Error('JWT_SECRET is required in production. Generate one with: openssl rand -base64 48');
+  }
+  // Development only: ephemeral per-boot secret (never committed, invalidates old sessions on restart).
+  console.warn('[Auth] JWT_SECRET not set - using an ephemeral random secret for this session only.');
+  return crypto.randomBytes(32).toString('hex');
+})();
 
 export interface AdminTokenPayload {
   adminId: string;

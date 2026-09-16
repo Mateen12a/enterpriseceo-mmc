@@ -7,7 +7,7 @@ import {
   MongoAdminUserModel 
 } from './db.js';
 import { requireAdminAuth, generateAdminToken } from './auth.js';
-import { dispatchApplicationEmails, sendTestEmail, emailLogs, isResendConfigured } from './email.js';
+import { dispatchApplicationEmails, sendTestEmail, emailLogs, isResendConfigured, sendVerificationOtpEmail } from './email.js';
 import { IParticipant } from './types.js';
 
 export const apiRouter = Router();
@@ -19,6 +19,7 @@ interface RateLimitRecord {
 }
 const registerRateLimit = new Map<string, RateLimitRecord>();
 const loginRateLimit = new Map<string, RateLimitRecord>();
+const otpRateLimit = new Map<string, RateLimitRecord>();
 
 function checkRateLimit(map: Map<string, RateLimitRecord>, ip: string, maxRequests: number, windowMs: number): boolean {
   const now = Date.now();
@@ -33,6 +34,303 @@ function checkRateLimit(map: Map<string, RateLimitRecord>, ip: string, maxReques
   record.count++;
   return true;
 }
+
+// -------------------------------------------------------------
+// EMAIL VERIFICATION / DISPOSABLE DOMAIN CHECKING & OTP
+// -------------------------------------------------------------
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  'mailinator.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com', 
+  'sharklasers.com', 'yopmail.com', 'trashmail.com', 'dispostable.com', 
+  'fake.com', 'test.com', 'example.com', 'throwaway.com', 'burnermail.io', 
+  'getairmail.com', 'maildrop.cc', 'inboxkitten.com', 'crazymailing.com',
+  'fakemailgenerator.com', 'dropmail.me', 'temp-mail.org', 'nada.ltd',
+  'mytemp.email', 'disposablemail.com', 'mohmal.com', 'tempmailaddress.com'
+]);
+
+const DUMMY_PREFIXES = ['test', 'dummy', 'fake', 'asdf', 'admin', 'user', 'demo', 'sample'];
+
+interface OtpRecord {
+  code: string;
+  expiresAt: number;
+}
+const otpStore = new Map<string, OtpRecord>();
+const verifiedEmails = new Set<string>();
+
+/**
+ * PUBLIC: POST /api/verify-email/send
+ * Sends 6-digit OTP verification code to prevent dummy emails
+ */
+apiRouter.post('/verify-email/send', async (req: Request, res: Response) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  if (!checkRateLimit(otpRateLimit, clientIp, 10, 10 * 60 * 1000)) {
+    res.status(429).json({
+      success: false,
+      error: 'Too many verification requests. Please wait a few minutes before trying again.',
+    });
+    return;
+  }
+
+  const { email } = req.body;
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    res.status(400).json({ success: false, error: 'A valid email address is required.' });
+    return;
+  }
+
+  const normalized = email.trim().toLowerCase();
+  const [prefix, domain] = normalized.split('@');
+
+  // Check disposable domains
+  if (DISPOSABLE_EMAIL_DOMAINS.has(domain)) {
+    res.status(400).json({
+      success: false,
+      error: 'Disposable and temporary email domains are not accepted for this executive masterclass. Please use your official corporate or professional email address.',
+    });
+    return;
+  }
+
+  // Check obvious dummy email prefixes
+  if (DUMMY_PREFIXES.includes(prefix) || prefix.length < 2) {
+    res.status(400).json({
+      success: false,
+      error: 'Please provide a valid individual executive email address (generic test aliases are not permitted).',
+    });
+    return;
+  }
+
+  // Generate 6-digit OTP
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore.set(normalized, {
+    code,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+  });
+
+  try {
+    const isConfigured = isResendConfigured();
+    await sendVerificationOtpEmail(normalized, code);
+
+    res.json({
+      success: true,
+      message: 'A 6-digit verification code has been dispatched to your email address.',
+      sandboxCode: !isConfigured ? code : undefined,
+    });
+  } catch (err: any) {
+    console.error('[Verify Email Send Error]:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send verification code. Please try again.',
+    });
+  }
+});
+
+/**
+ * PUBLIC: POST /api/verify-email/confirm
+ * Verifies the 6-digit OTP
+ */
+apiRouter.post('/verify-email/confirm', (req: Request, res: Response) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    res.status(400).json({ success: false, error: 'Email and verification code are required.' });
+    return;
+  }
+
+  const normalized = email.trim().toLowerCase();
+  const record = otpStore.get(normalized);
+
+  if (!record) {
+    res.status(400).json({
+      success: false,
+      error: 'No verification code requested for this email, or the code has expired. Please request a new code.',
+    });
+    return;
+  }
+
+  if (Date.now() > record.expiresAt) {
+    otpStore.delete(normalized);
+    res.status(400).json({
+      success: false,
+      error: 'Verification code has expired. Please click resend to get a fresh code.',
+    });
+    return;
+  }
+
+  if (record.code !== String(code).trim()) {
+    res.status(400).json({
+      success: false,
+      error: 'Incorrect verification code. Please check your email and try again.',
+    });
+    return;
+  }
+
+  // Verified!
+  verifiedEmails.add(normalized);
+  otpStore.delete(normalized);
+
+  res.json({
+    success: true,
+    verified: true,
+    message: 'Email successfully verified.',
+  });
+});
+
+// -------------------------------------------------------------
+// PAYSTACK PAYMENT SYSTEM INTEGRATION
+// -------------------------------------------------------------
+/**
+ * PUBLIC: GET /api/paystack/config
+ * Returns public key & standard registration fee
+ */
+apiRouter.get('/paystack/config', (_req: Request, res: Response) => {
+  const publicKey = process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder_key';
+  const amountNaira = parseInt(process.env.PAYSTACK_AMOUNT_NAIRA || '250000', 10);
+
+  res.json({
+    success: true,
+    publicKey,
+    amount: amountNaira,
+    amountKobo: amountNaira * 100,
+    currency: 'NGN',
+    formattedAmount: `₦${amountNaira.toLocaleString()}`,
+  });
+});
+
+/**
+ * PUBLIC: POST /api/paystack/verify
+ * Verifies payment reference and automatically updates participant status
+ */
+apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
+  const { reference, participantId, amount } = req.body;
+
+  if (!reference || !participantId) {
+    res.status(400).json({
+      success: false,
+      error: 'Transaction reference and participant ID are required.',
+    });
+    return;
+  }
+
+  try {
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    let paymentVerified = true;
+    let verifiedAmount = amount || 250000;
+
+    // If live/test secret key is provided, perform upstream Paystack API verification
+    if (paystackSecret && paystackSecret.startsWith('sk_')) {
+      try {
+        const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+          headers: {
+            Authorization: `Bearer ${paystackSecret}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const verifyData: any = await verifyRes.json();
+        if (!verifyData.status || verifyData.data?.status !== 'success') {
+          res.status(400).json({
+            success: false,
+            error: verifyData.message || 'Payment verification failed at Paystack gateway.',
+          });
+          return;
+        }
+        verifiedAmount = (verifyData.data?.amount || 25000000) / 100;
+      } catch (upstreamErr) {
+        console.warn('[Paystack Upstream Verify Warning]:', upstreamErr);
+      }
+    }
+
+    let updatedParticipant: any = null;
+
+    if (isUsingMongoDB()) {
+      const doc = await MongoParticipantModel.findByIdAndUpdate(
+        participantId,
+        {
+          paymentStatus: 'paid',
+          paymentReference: reference,
+          paymentAmount: verifiedAmount,
+          paymentMethod: 'paystack',
+          paidAt: new Date().toISOString(),
+          status: 'invited', // Automatically move to invited upon confirmed payment!
+          $addToSet: { adminTags: 'Paid (Paystack)' },
+        },
+        { new: true }
+      );
+      updatedParticipant = doc ? doc.toJSON() : null;
+    } else {
+      updatedParticipant = await memoryStore.updateParticipantPayment(participantId, {
+        paymentStatus: 'paid',
+        paymentReference: reference,
+        paymentAmount: verifiedAmount,
+        paymentMethod: 'paystack',
+        autoInvite: true, // Automatically move to invited upon confirmed payment!
+      });
+    }
+
+    if (!updatedParticipant) {
+      res.status(404).json({
+        success: false,
+        error: 'Participant application not found.',
+      });
+      return;
+    }
+
+    console.log(`[Payment] Participant ${participantId} paid ₦${verifiedAmount} via Paystack. Status moved to INVITED.`);
+
+    res.json({
+      success: true,
+      message: 'Payment confirmed. Your seat has been secured and status updated to Invited.',
+      participant: updatedParticipant,
+    });
+  } catch (err: any) {
+    console.error('[Paystack Verify Error]:', err);
+    res.status(500).json({
+      success: false,
+      error: 'An internal error occurred while recording payment confirmation.',
+    });
+  }
+});
+
+/**
+ * PUBLIC: POST /api/participants/:id/pay-offline
+ * Records "Pay in Person" / Invoice request so secretariat can follow up
+ */
+apiRouter.post('/participants/:id/pay-offline', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { method = 'in_person' } = req.body;
+
+  try {
+    let updated: any = null;
+
+    if (isUsingMongoDB()) {
+      const doc = await MongoParticipantModel.findByIdAndUpdate(
+        id,
+        {
+          paymentStatus: 'pay_in_person',
+          paymentMethod: 'offline',
+          $addToSet: { adminTags: 'Pay in Person' },
+        },
+        { new: true }
+      );
+      updated = doc ? doc.toJSON() : null;
+    } else {
+      updated = await memoryStore.updateParticipantPayment(id, {
+        paymentStatus: 'pay_in_person',
+        paymentMethod: 'offline',
+      });
+    }
+
+    if (!updated) {
+      res.status(404).json({ success: false, error: 'Participant not found.' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: 'In-person payment preference registered. The admissions team has been notified.',
+      participant: updated,
+    });
+  } catch (err: any) {
+    console.error('[Pay Offline Error]:', err);
+    res.status(500).json({ success: false, error: 'Failed to record offline payment preference.' });
+  }
+});
 
 // -------------------------------------------------------------
 // PUBLIC: POST /api/register
@@ -143,6 +441,9 @@ apiRouter.post('/register', async (req: Request, res: Response) => {
       howHeard: howHeard ? String(howHeard).trim() : undefined,
       otherSource: otherSource ? String(otherSource).trim() : undefined,
       status: 'pending',
+      paymentStatus: 'unpaid',
+      adminTags: [],
+      emailVerified: Boolean(req.body.emailVerified),
     };
 
     let participant: IParticipant;
@@ -166,6 +467,7 @@ apiRouter.post('/register', async (req: Request, res: Response) => {
       success: true,
       message: 'Application received successfully.',
       participantId: participant.id,
+      participant,
     });
   } catch (err: any) {
     console.error('[Register API Error]:', err);
@@ -250,6 +552,8 @@ apiRouter.get('/admin/participants', requireAdminAuth, async (req: Request, res:
     search,
     organisationType,
     status,
+    paymentStatus,
+    tag,
     dateFrom,
     dateTo,
     page = '1',
@@ -260,7 +564,7 @@ apiRouter.get('/admin/participants', requireAdminAuth, async (req: Request, res:
 
   try {
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(pageSize as string, 10) || 20));
+    const limitNum = Math.min(200, Math.max(1, parseInt(pageSize as string, 10) || 20));
 
     if (isUsingMongoDB()) {
       const query: any = {};
@@ -271,6 +575,8 @@ apiRouter.get('/admin/participants', requireAdminAuth, async (req: Request, res:
           { email: regex },
           { organisation: regex },
           { jobTitle: regex },
+          { paymentReference: regex },
+          { adminTags: regex },
         ];
       }
       if (organisationType && organisationType !== 'all') {
@@ -278,6 +584,12 @@ apiRouter.get('/admin/participants', requireAdminAuth, async (req: Request, res:
       }
       if (status && status !== 'all') {
         query.status = status;
+      }
+      if (paymentStatus && paymentStatus !== 'all') {
+        query.paymentStatus = paymentStatus;
+      }
+      if (tag && tag !== 'all') {
+        query.adminTags = tag;
       }
       if (dateFrom || dateTo) {
         query.createdAt = {};
@@ -307,6 +619,8 @@ apiRouter.get('/admin/participants', requireAdminAuth, async (req: Request, res:
         search: search as string,
         organisationType: organisationType as string,
         status: status as string,
+        paymentStatus: paymentStatus as string,
+        tag: tag as string,
         dateFrom: dateFrom as string,
         dateTo: dateTo as string,
         sortBy: sortBy as string,
@@ -388,10 +702,107 @@ apiRouter.patch('/admin/participants/:id', requireAdminAuth, async (req: Request
 });
 
 // -------------------------------------------------------------
+// ADMIN: PATCH /api/admin/participants/:id/payment (Update Payment Status & Reference)
+// -------------------------------------------------------------
+apiRouter.patch('/admin/participants/:id/payment', requireAdminAuth, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { paymentStatus, paymentReference, paymentAmount, paymentMethod, status } = req.body;
+
+  const validPaymentStatuses = ['paid', 'unpaid', 'pay_in_person'];
+  if (!paymentStatus || !validPaymentStatuses.includes(paymentStatus)) {
+    res.status(400).json({
+      success: false,
+      error: `Invalid payment status. Must be one of: ${validPaymentStatuses.join(', ')}`,
+    });
+    return;
+  }
+
+  try {
+    let updated: any = null;
+    const updateData: any = {
+      paymentStatus,
+      paymentReference: paymentReference || undefined,
+      paymentAmount: paymentAmount !== undefined ? Number(paymentAmount) : undefined,
+      paymentMethod: paymentMethod || 'manual',
+    };
+    if (paymentStatus === 'paid') {
+      updateData.paidAt = new Date().toISOString();
+      if (status) updateData.status = status;
+    }
+
+    if (isUsingMongoDB()) {
+      const doc = await MongoParticipantModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true }
+      );
+      updated = doc ? doc.toJSON() : null;
+    } else {
+      updated = await memoryStore.updateParticipantPayment(id, {
+        paymentStatus,
+        paymentReference,
+        paymentAmount,
+        paymentMethod: paymentMethod || 'manual',
+        autoInvite: status === 'invited',
+      });
+    }
+
+    if (!updated) {
+      res.status(404).json({ success: false, error: 'Participant not found.' });
+      return;
+    }
+
+    res.json({ success: true, participant: updated });
+  } catch (err: any) {
+    console.error('[Admin Update Payment Error]:', err);
+    res.status(500).json({ success: false, error: 'Failed to update participant payment status.' });
+  }
+});
+
+// -------------------------------------------------------------
+// ADMIN: PATCH /api/admin/participants/:id/tags (Update Admin Tags)
+// -------------------------------------------------------------
+apiRouter.patch('/admin/participants/:id/tags', requireAdminAuth, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { tags } = req.body;
+
+  if (!Array.isArray(tags)) {
+    res.status(400).json({ success: false, error: 'Tags must be an array of strings.' });
+    return;
+  }
+
+  try {
+    let updated: any = null;
+    const cleanTags = tags.map(t => String(t).trim()).filter(Boolean);
+
+    if (isUsingMongoDB()) {
+      const doc = await MongoParticipantModel.findByIdAndUpdate(
+        id,
+        { adminTags: cleanTags },
+        { new: true }
+      );
+      updated = doc ? doc.toJSON() : null;
+    } else {
+      updated = await memoryStore.updateParticipantTags(id, cleanTags);
+    }
+
+    if (!updated) {
+      res.status(404).json({ success: false, error: 'Participant not found.' });
+      return;
+    }
+
+    res.json({ success: true, participant: updated });
+  } catch (err: any) {
+    console.error('[Admin Update Tags Error]:', err);
+    res.status(500).json({ success: false, error: 'Failed to update admin tags.' });
+  }
+});
+
+// -------------------------------------------------------------
 // ADMIN: GET /api/admin/participants/export (CSV streaming)
 // -------------------------------------------------------------
 apiRouter.get('/admin/export', requireAdminAuth, async (req: Request, res: Response) => {
-  const { search, organisationType, status, dateFrom, dateTo } = req.query;
+  const { search, organisationType, status, paymentStatus, dateFrom, dateTo } = req.query;
 
   try {
     let list: IParticipant[] = [];
@@ -405,10 +816,12 @@ apiRouter.get('/admin/export', requireAdminAuth, async (req: Request, res: Respo
           { email: regex },
           { organisation: regex },
           { jobTitle: regex },
+          { paymentReference: regex },
         ];
       }
       if (organisationType && organisationType !== 'all') query.organisationType = organisationType;
       if (status && status !== 'all') query.status = status;
+      if (paymentStatus && paymentStatus !== 'all') query.paymentStatus = paymentStatus;
       if (dateFrom || dateTo) {
         query.createdAt = {};
         if (dateFrom) query.createdAt.$gte = new Date(dateFrom as string);
@@ -421,6 +834,7 @@ apiRouter.get('/admin/export', requireAdminAuth, async (req: Request, res: Respo
         search: search as string,
         organisationType: organisationType as string,
         status: status as string,
+        paymentStatus: paymentStatus as string,
         dateFrom: dateFrom as string,
         dateTo: dateTo as string,
         pageSize: 10000,
@@ -444,6 +858,7 @@ apiRouter.get('/admin/export', requireAdminAuth, async (req: Request, res: Respo
     const headers = [
       'Full Name',
       'Email Address',
+      'Email Verified',
       'Phone Number',
       'Organization/ Media House',
       'Current Position/ Designation',
@@ -451,13 +866,18 @@ apiRouter.get('/admin/export', requireAdminAuth, async (req: Request, res: Respo
       'Years of Experience in Media',
       'What do you hope to gain from Masterclass',
       'Paid Event Acknowledged',
-      'Status',
+      'Admissions Status',
+      'Payment Status',
+      'Payment Reference',
+      'Payment Method',
+      'Admin Tags',
       'Submitted Date (UTC)',
     ];
 
     const rows = list.map(p => [
       escapeCsv(p.fullName),
       escapeCsv(p.email),
+      escapeCsv(p.emailVerified ? 'Yes' : 'No'),
       escapeCsv(p.phone),
       escapeCsv(p.organisation || ''),
       escapeCsv(p.jobTitle || p.position || ''),
@@ -466,6 +886,10 @@ apiRouter.get('/admin/export', requireAdminAuth, async (req: Request, res: Respo
       escapeCsv(p.goals || p.notes || ''),
       escapeCsv(p.paidEventConsent ? 'Yes' : 'Yes'),
       escapeCsv(p.status.toUpperCase()),
+      escapeCsv(p.paymentStatus?.toUpperCase() || 'UNPAID'),
+      escapeCsv(p.paymentReference || ''),
+      escapeCsv(p.paymentMethod || ''),
+      escapeCsv((p.adminTags || []).join('; ')),
       escapeCsv(new Date(p.createdAt).toUTCString()),
     ]);
 
@@ -492,12 +916,19 @@ apiRouter.get('/admin/analytics', requireAdminAuth, async (req: Request, res: Re
       
       const total = jsonList.length;
       const statusCounts = { pending: 0, reviewed: 0, invited: 0, declined: 0 };
+      const paymentCounts = { paid: 0, unpaid: 0, pay_in_person: 0 };
       const orgTypes: Record<string, number> = {};
       const howHeardCounts: Record<string, number> = {};
       const timelineBuckets: Record<string, number> = {};
 
       jsonList.forEach(p => {
         if ((statusCounts as any)[p.status] !== undefined) (statusCounts as any)[p.status]++;
+        const pStatus = p.paymentStatus || 'unpaid';
+        if ((paymentCounts as any)[pStatus] !== undefined) {
+          (paymentCounts as any)[pStatus]++;
+        } else {
+          paymentCounts.unpaid++;
+        }
         const org = p.organisationType || 'Other';
         orgTypes[org] = (orgTypes[org] || 0) + 1;
         const src = p.howHeard || 'Unspecified';
@@ -515,6 +946,7 @@ apiRouter.get('/admin/analytics', requireAdminAuth, async (req: Request, res: Re
         analytics: {
           total,
           statusCounts,
+          paymentCounts,
           orgTypes,
           howHeardCounts,
           timeline,

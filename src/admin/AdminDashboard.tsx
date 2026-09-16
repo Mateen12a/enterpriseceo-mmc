@@ -47,6 +47,8 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedOrgType, setSelectedOrgType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string>('all');
+  const [selectedTag, setSelectedTag] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('createdAt');
@@ -75,6 +77,8 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
       if (searchQuery.trim()) params.append('search', searchQuery.trim());
       if (selectedOrgType !== 'all') params.append('organisationType', selectedOrgType);
       if (selectedStatus !== 'all') params.append('status', selectedStatus);
+      if (selectedPaymentStatus !== 'all') params.append('paymentStatus', selectedPaymentStatus);
+      if (selectedTag !== 'all') params.append('tag', selectedTag);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
 
@@ -98,7 +102,7 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
     } finally {
       setIsLoadingParticipants(false);
     }
-  }, [token, page, pageSize, sortBy, sortOrder, searchQuery, selectedOrgType, selectedStatus, dateFrom, dateTo]);
+  }, [token, page, pageSize, sortBy, sortOrder, searchQuery, selectedOrgType, selectedStatus, selectedPaymentStatus, selectedTag, dateFrom, dateTo]);
 
   // Fetch Analytics
   const fetchAnalytics = useCallback(async () => {
@@ -146,6 +150,8 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
     if (searchQuery.trim()) params.append('search', searchQuery.trim());
     if (selectedOrgType !== 'all') params.append('organisationType', selectedOrgType);
     if (selectedStatus !== 'all') params.append('status', selectedStatus);
+    if (selectedPaymentStatus !== 'all') params.append('paymentStatus', selectedPaymentStatus);
+    if (selectedTag !== 'all') params.append('tag', selectedTag);
     if (dateFrom) params.append('dateFrom', dateFrom);
     if (dateTo) params.append('dateTo', dateTo);
 
@@ -177,6 +183,65 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
       }
     } catch (err) {
       console.error('Failed to update status:', err);
+    }
+  };
+
+  // Update Payment Details
+  const handleUpdatePayment = async (
+    id: string, 
+    paymentData: { 
+      paymentStatus: 'paid' | 'unpaid' | 'pay_in_person'; 
+      paymentReference?: string; 
+      paymentAmount?: number; 
+      paymentMethod?: 'paystack' | 'offline' | 'manual';
+    }
+  ) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/participants/${id}/payment`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      const data = await res.json();
+      if (data.success && data.participant) {
+        setParticipants(prev => prev.map(p => (p.id === id ? { ...p, ...data.participant } : p)));
+        if (selectedParticipant && selectedParticipant.id === id) {
+          setSelectedParticipant({ ...selectedParticipant, ...data.participant });
+        }
+        fetchAnalytics();
+      }
+    } catch (err) {
+      console.error('Failed to update payment:', err);
+    }
+  };
+
+  // Update Admin Tags
+  const handleUpdateTags = async (id: string, tags: string[]) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/participants/${id}/tags`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ adminTags: tags }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.participant) {
+        setParticipants(prev => prev.map(p => (p.id === id ? { ...p, ...data.participant } : p)));
+        if (selectedParticipant && selectedParticipant.id === id) {
+          setSelectedParticipant({ ...selectedParticipant, ...data.participant });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update tags:', err);
     }
   };
 
@@ -400,6 +465,18 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
               }}
               onExportCsv={handleExportCsv}
               onUpdateStatus={handleUpdateStatus}
+              selectedPaymentStatus={selectedPaymentStatus}
+              onPaymentStatusChange={s => {
+                setSelectedPaymentStatus(s);
+                setPage(1);
+              }}
+              selectedTag={selectedTag}
+              onTagChange={t => {
+                setSelectedTag(t);
+                setPage(1);
+              }}
+              onUpdatePayment={handleUpdatePayment}
+              onUpdateTags={handleUpdateTags}
               selectedParticipant={selectedParticipant}
               onSelectParticipant={setSelectedParticipant}
             />

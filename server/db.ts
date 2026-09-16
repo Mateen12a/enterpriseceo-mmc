@@ -28,6 +28,17 @@ const ParticipantSchema = new Schema<IParticipant>(
       enum: ['pending', 'reviewed', 'invited', 'declined'],
       default: 'pending',
     },
+    paymentStatus: {
+      type: String,
+      enum: ['paid', 'unpaid', 'pay_in_person'],
+      default: 'unpaid',
+    },
+    paymentReference: { type: String },
+    paymentAmount: { type: Number },
+    paymentMethod: { type: String },
+    paidAt: { type: String },
+    adminTags: { type: [String], default: [] },
+    emailVerified: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -88,6 +99,8 @@ class MemoryStore {
     search?: string;
     organisationType?: string;
     status?: string;
+    paymentStatus?: string;
+    tag?: string;
     dateFrom?: string;
     dateTo?: string;
     sortBy?: string;
@@ -106,6 +119,8 @@ class MemoryStore {
         (p.jobTitle && p.jobTitle.toLowerCase().includes(q)) ||
         (p.position && p.position.toLowerCase().includes(q)) ||
         (p.category && p.category.toLowerCase().includes(q)) ||
+        (p.paymentReference && p.paymentReference.toLowerCase().includes(q)) ||
+        (p.adminTags && p.adminTags.some(t => t.toLowerCase().includes(q))) ||
         (p.yearsExperience && p.yearsExperience.toLowerCase().includes(q))
       );
     }
@@ -116,6 +131,14 @@ class MemoryStore {
 
     if (filter?.status && filter.status !== 'all') {
       list = list.filter(p => p.status === filter.status);
+    }
+
+    if (filter?.paymentStatus && filter.paymentStatus !== 'all') {
+      list = list.filter(p => p.paymentStatus === filter.paymentStatus);
+    }
+
+    if (filter?.tag && filter.tag !== 'all') {
+      list = list.filter(p => p.adminTags && p.adminTags.includes(filter.tag!));
     }
 
     if (filter?.dateFrom) {
@@ -162,10 +185,56 @@ class MemoryStore {
     return item;
   }
 
+  async updateParticipantPayment(
+    id: string,
+    data: {
+      paymentStatus: 'paid' | 'unpaid' | 'pay_in_person';
+      paymentReference?: string;
+      paymentAmount?: number;
+      paymentMethod?: 'paystack' | 'offline' | 'manual';
+      autoInvite?: boolean;
+    }
+  ): Promise<IParticipant | null> {
+    const item = this.participants.get(id);
+    if (!item) return null;
+    item.paymentStatus = data.paymentStatus;
+    if (data.paymentReference) item.paymentReference = data.paymentReference;
+    if (data.paymentAmount !== undefined) item.paymentAmount = data.paymentAmount;
+    if (data.paymentMethod) item.paymentMethod = data.paymentMethod;
+    if (data.paymentStatus === 'paid') {
+      item.paidAt = new Date().toISOString();
+      if (data.autoInvite) {
+        item.status = 'invited';
+      }
+      const existingTags = item.adminTags || [];
+      if (!existingTags.includes('Paid (Paystack)') && data.paymentMethod === 'paystack') {
+        item.adminTags = [...existingTags, 'Paid (Paystack)'];
+      }
+    } else if (data.paymentStatus === 'pay_in_person') {
+      const existingTags = item.adminTags || [];
+      if (!existingTags.includes('Pay in Person')) {
+        item.adminTags = [...existingTags, 'Pay in Person'];
+      }
+    }
+    item.updatedAt = new Date().toISOString();
+    this.participants.set(id, item);
+    return item;
+  }
+
+  async updateParticipantTags(id: string, tags: string[]): Promise<IParticipant | null> {
+    const item = this.participants.get(id);
+    if (!item) return null;
+    item.adminTags = tags;
+    item.updatedAt = new Date().toISOString();
+    this.participants.set(id, item);
+    return item;
+  }
+
   async getAnalytics() {
     const list = Array.from(this.participants.values());
     const total = list.length;
     const statusCounts = { pending: 0, reviewed: 0, invited: 0, declined: 0 };
+    const paymentCounts = { paid: 0, unpaid: 0, pay_in_person: 0 };
     const orgTypes: Record<string, number> = {};
     const howHeardCounts: Record<string, number> = {};
 
@@ -175,6 +244,13 @@ class MemoryStore {
       // Status
       if (statusCounts[p.status] !== undefined) {
         statusCounts[p.status]++;
+      }
+      // Payment Status
+      const payStatus = p.paymentStatus || 'unpaid';
+      if ((paymentCounts as any)[payStatus] !== undefined) {
+        (paymentCounts as any)[payStatus]++;
+      } else {
+        paymentCounts.unpaid++;
       }
       // Org Types
       const org = p.organisationType || 'Other';
@@ -196,6 +272,7 @@ class MemoryStore {
     return {
       total,
       statusCounts,
+      paymentCounts,
       orgTypes,
       howHeardCounts,
       timeline,

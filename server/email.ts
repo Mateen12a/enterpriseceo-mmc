@@ -147,6 +147,9 @@ export async function sendTestEmail(toEmail: string): Promise<{ success: boolean
     notes: 'Strengthening media executive leadership, AI workflows, and digital monetisation.',
     consent: true,
     status: 'pending',
+    paymentStatus: 'unpaid',
+    adminTags: ['Test Delegate'],
+    emailVerified: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -201,3 +204,69 @@ export async function sendTestEmail(toEmail: string): Promise<{ success: boolean
     };
   }
 }
+
+/**
+ * Sends a 6-digit email verification code to the applicant's email address
+ */
+export async function sendVerificationOtpEmail(toEmail: string, code: string): Promise<boolean> {
+  const rawSendingFrom = process.env.SENDING_EMAIL_ADDRESS || 'no-reply@mmc.enterpriseceo.africa';
+  const sendingFrom = rawSendingFrom.includes('<') ? rawSendingFrom : `EnterpriseCEO Masterclass <${rawSendingFrom}>`;
+  const resend = getResend();
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head><meta charset="utf-8" /></head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 30px 15px; color: #1e293b;">
+        <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+          <div style="background: #0f172a; padding: 24px 30px; border-bottom: 3px solid #f97316;">
+            <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #f97316; font-weight: bold;">Executive Admissions Verification</p>
+            <h1 style="margin: 6px 0 0 0; font-size: 20px; color: #ffffff; font-weight: 700;">EnterpriseCEO Media Masterclass 2026</h1>
+          </div>
+          <div style="padding: 30px;">
+            <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #334155;">
+              You are completing an application for the <strong>Media Owners &amp; Senior Executives Masterclass</strong>.
+            </p>
+            <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #334155;">
+              Please use the one-time executive security code below to verify your professional email address:
+            </p>
+            <div style="background: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1; text-align: center; padding: 20px; margin: 24px 0;">
+              <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #0f172a;">${code}</span>
+              <p style="margin: 8px 0 0 0; font-size: 11px; color: #64748b;">This code expires in 10 minutes. Do not share this code.</p>
+            </div>
+            <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+              If you did not initiate this application, you can safely ignore this email.
+            </p>
+          </div>
+          <div style="background: #f8fafc; padding: 16px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8;">
+            &copy; 2026 EnterpriseCEO &bull; In Partnership with Pan-Atlantic University
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const text = `EnterpriseCEO Masterclass Email Verification\n\nYour 6-digit verification code is: ${code}\n\nThis code expires in 10 minutes.`;
+
+  if (resend) {
+    try {
+      await resend.emails.send({
+        from: sendingFrom,
+        replyTo: 'hello@enterpriseceo.africa',
+        to: toEmail,
+        subject: `Your Verification Code: ${code} - EnterpriseCEO Masterclass`,
+        html,
+        text,
+      });
+      console.log(`[Email] OTP verification code dispatched to ${toEmail}`);
+      return true;
+    } catch (err) {
+      console.error('[Email] Failed to dispatch OTP to', toEmail, err);
+      return false;
+    }
+  } else {
+    console.log(`[Email-Simulation] Verification code for ${toEmail}: ${code}`);
+    return true;
+  }
+}
+

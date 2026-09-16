@@ -19,6 +19,13 @@ export interface AdminParticipant {
   notes?: string;
   consent: boolean;
   status: 'pending' | 'reviewed' | 'invited' | 'declined';
+  paymentStatus?: 'paid' | 'unpaid' | 'pay_in_person';
+  paymentReference?: string;
+  paymentAmount?: number;
+  paymentMethod?: 'paystack' | 'offline' | 'manual';
+  paidAt?: string;
+  adminTags?: string[];
+  emailVerified?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +37,11 @@ export interface AdminAnalyticsData {
     reviewed: number;
     invited: number;
     declined: number;
+  };
+  paymentCounts?: {
+    paid: number;
+    unpaid: number;
+    pay_in_person: number;
   };
   orgTypes: Record<string, number>;
   howHeardCounts: Record<string, number>;

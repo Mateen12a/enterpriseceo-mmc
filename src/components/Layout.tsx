@@ -77,16 +77,22 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
 
   return (
     <div className="min-h-screen bg-white font-sans text-ink-900 scroll-smooth">
-      {/* Sticky Top Header */}
-      <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-navy-900/95 backdrop-blur-md shadow-md py-3' : 'bg-navy-900 py-4 sm:py-5'
-        }`}
-      >
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      {/* Floating Executive Header — centered pill, same surface as the bottom bar */}
+      <header className="fixed top-2.5 sm:top-4 inset-x-0 z-50 px-3 sm:px-4">
+        <div
+          className={`mx-auto w-fit max-w-full min-w-[19rem] xl:min-w-[66rem] px-5 sm:px-8 transition-all duration-300 border ${
+            mobileMenuOpen
+              ? 'rounded-3xl bg-navy-900/95 backdrop-blur-md border-white/15 shadow-2xl py-4'
+              : isScrolled
+                ? 'rounded-full bg-navy-900/95 backdrop-blur-md border-white/10 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] py-2'
+                : 'rounded-full bg-white/[0.06] backdrop-blur-md border-white/15 py-2.5'
+          }`
+        }
+        >
+        <div className="flex items-center justify-between gap-6 xl:gap-8">
           <a href="#" className="flex items-center gap-3 text-white group focus:outline-none">
             {/* Authentic Brand Geometric Mark */}
-            <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 bg-navy-900 flex items-center justify-center">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 bg-navy-900 ring-1 ring-white/25 flex items-center justify-center">
               <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                 {/* Left panel */}
                 <polygon points="7,0 50,0 50,50" fill="white" />
@@ -99,29 +105,33 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
             </div>
 
             {/* Brand Text Lockup matching source art */}
-            <div className="flex flex-col text-left font-sans">
-              <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.16em] uppercase text-white/80 leading-tight">
+            <div className="flex flex-col text-left font-sans whitespace-nowrap">
+              <span className="text-[8.5px] sm:text-[9.5px] font-semibold tracking-[0.2em] uppercase text-white/70 leading-tight mb-0.5">
                 EnterpriseCEO
               </span>
-              <span className="text-xs sm:text-sm font-bold tracking-tight text-white leading-tight">
+              <span className="text-xs sm:text-[13px] font-bold tracking-tight text-white leading-[1.18]">
                 Media Owners &amp; Executives
               </span>
-              <span className="text-xs sm:text-sm font-bold tracking-tight text-orange-400 leading-tight">
+              <span className="text-xs sm:text-[13px] font-bold tracking-tight text-orange-400 leading-[1.18]">
                 Masterclass
               </span>
             </div>
           </a>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8 text-sm font-medium text-cream-50/90">
+          <nav className="hidden xl:flex items-center gap-5 text-[13px] font-medium text-cream-50/90 whitespace-nowrap">
             {navLinks.map(link => (
               <a key={link.name} href={link.href} className="hover:text-white transition-colors">
                 {link.name}
               </a>
             ))}
+            <span className="hidden 2xl:inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-cream-50/80 border-l border-white/15 pl-5 whitespace-nowrap">
+              <Calendar className="w-3.5 h-3.5 text-orange-400" />
+              21–22 Oct 2026
+            </span>
             <button 
               onClick={handleApplyClick}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-md font-semibold text-sm transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full font-semibold text-sm transition-all shadow-sm active:scale-95 flex items-center gap-1.5 whitespace-nowrap"
             >
               Apply to Attend
               <ArrowUpRight className="w-4 h-4" />
@@ -129,10 +139,10 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
           </nav>
 
           {/* Mobile Menu Toggle */}
-          <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-2 xl:hidden">
             <button 
               onClick={handleApplyClick}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-3.5 py-1.5 rounded-md font-bold text-xs transition-colors shadow-sm"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow-sm"
             >
               Apply
             </button>
@@ -148,7 +158,7 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
 
         {/* Mobile Nav Dropdown */}
         {mobileMenuOpen && (
-          <nav className="lg:hidden bg-navy-900 border-t border-white/10 p-6 flex flex-col space-y-4 shadow-2xl">
+          <nav className="xl:hidden border-t border-white/10 mt-3 pt-4 flex flex-col space-y-4 min-w-[15rem]">
             {navLinks.map(link => (
               <a 
                 key={link.name} 
@@ -167,6 +177,7 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
             </button>
           </nav>
         )}
+        </div>
       </header>
 
       {/* Main Content */}

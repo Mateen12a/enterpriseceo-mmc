@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { ApplyModalProvider } from './context/ApplyModalContext';
 import { Layout } from './components/Layout';
 import { Hero } from './components/Hero';
+import { MasterclassIntro } from './components/MasterclassIntro';
 import { EventFlier } from './components/EventFlier';
 import { 
   BackgroundRationale, 
@@ -65,6 +66,7 @@ export default function App() {
     <ApplyModalProvider>
       <Layout onOpenAdmin={handleOpenAdmin}>
         <Hero />
+        <MasterclassIntro />
         <EventFlier />
         <BackgroundRationale />
         <ProgrammeObjectives />

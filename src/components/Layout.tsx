@@ -78,9 +78,9 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
   return (
     <div className="min-h-screen bg-white font-sans text-ink-900 scroll-smooth">
       {/* Floating Executive Header — centered pill, same surface as the bottom bar */}
-      <header className="fixed top-2.5 sm:top-4 inset-x-0 z-50 px-3 sm:px-4">
+      <header className="fixed top-2 inset-x-0 z-50 px-3 sm:px-4">
         <div
-          className={`mx-auto w-fit max-w-full min-w-[19rem] xl:min-w-[66rem] px-5 sm:px-8 transition-all duration-300 border ${
+          className={`w-full max-w-5xl mx-auto px-5 sm:px-8 transition-all duration-300 border ${
             mobileMenuOpen
               ? 'rounded-3xl bg-navy-900/95 backdrop-blur-md border-white/15 shadow-2xl py-4'
               : isScrolled
@@ -125,10 +125,6 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
                 {link.name}
               </a>
             ))}
-            <span className="hidden 2xl:inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-cream-50/80 border-l border-white/15 pl-5 whitespace-nowrap">
-              <Calendar className="w-3.5 h-3.5 text-orange-400" />
-              21–22 Oct 2026
-            </span>
             <button 
               onClick={handleApplyClick}
               className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full font-semibold text-sm transition-all shadow-sm active:scale-95 flex items-center gap-1.5 whitespace-nowrap"

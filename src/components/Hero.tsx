@@ -22,11 +22,11 @@ export function Hero() {
           src="/p-event/photo-1.jpg"
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-[50%_35%]"
         />
       ) : (
         <video
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-[50%_35%]"
           src="/bg-video/highlight-2022.mp4"
           poster="/p-event/photo-1.jpg"
           autoPlay
@@ -38,9 +38,10 @@ export function Hero() {
         />
       )}
 
-      {/* Cinematic vignettes — gentle depth without hiding the footage */}
+      {/* Cinematic vignettes — gentle depth without hiding the footage;
+          top fade kept light so faces in the film stay visible */}
       <div className="absolute inset-0 z-0 bg-navy-900/20" aria-hidden="true" />
-      <div className="absolute inset-x-0 top-0 h-28 z-0 bg-gradient-to-b from-navy-900/70 to-transparent" aria-hidden="true" />
+      <div className="absolute inset-x-0 top-0 h-16 z-0 bg-gradient-to-b from-navy-900/35 to-transparent" aria-hidden="true" />
       <div className="absolute inset-x-0 bottom-0 h-44 z-0 bg-gradient-to-t from-navy-900/85 to-transparent" aria-hidden="true" />
 
       {/* Quiet scroll cue — the only element over the film */}

@@ -68,7 +68,7 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
   const navLinks = [
     { name: 'Overview', href: '#overview' },
     { name: 'Who It\'s For', href: '#who-its-for' },
-    { name: 'Programme Structure', href: '#structure' },
+    { name: 'Programme', href: '#structure' },
     { name: 'Curriculum', href: '#curriculum' },
     { name: 'Faculty', href: '#faculty' },
     { name: 'Logistics', href: '#logistics' },
@@ -80,7 +80,7 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
       {/* Floating Executive Header — centered pill, same surface as the bottom bar */}
       <header className="fixed top-2 inset-x-0 z-50 px-3 sm:px-4">
         <div
-          className={`w-full max-w-5xl mx-auto px-5 sm:px-8 transition-all duration-300 border ${
+          className={`w-full xl:w-fit xl:min-w-[64rem] mx-auto px-4 sm:px-6 xl:px-8 transition-all duration-300 border ${
             mobileMenuOpen
               ? 'rounded-3xl bg-navy-900/95 backdrop-blur-md border-white/15 shadow-2xl py-4'
               : isScrolled
@@ -90,9 +90,9 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
         }
         >
         <div className="flex items-center justify-between gap-6 xl:gap-8">
-          <a href="#" className="flex items-center gap-3 text-white group focus:outline-none">
+          <a href="#" className="flex items-center gap-2.5 sm:gap-3 text-white group focus:outline-none min-w-0">
             {/* Authentic Brand Geometric Mark */}
-            <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 bg-navy-900 ring-1 ring-white/25 flex items-center justify-center">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 bg-navy-900 ring-1 ring-white/25 flex items-center justify-center">
               <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                 {/* Left panel */}
                 <polygon points="7,0 50,0 50,50" fill="white" />
@@ -119,7 +119,7 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
           </a>
 
           {/* Desktop Nav */}
-          <nav className="hidden xl:flex items-center gap-5 text-[13px] font-medium text-cream-50/90 whitespace-nowrap">
+          <nav className="hidden xl:flex items-center gap-4 text-[13px] font-medium text-cream-50/90 whitespace-nowrap">
             {navLinks.map(link => (
               <a key={link.name} href={link.href} className="hover:text-white transition-colors">
                 {link.name}
@@ -127,7 +127,7 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
             ))}
             <button 
               onClick={handleApplyClick}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full font-semibold text-sm transition-all shadow-sm active:scale-95 flex items-center gap-1.5 whitespace-nowrap"
+              className="shrink-0 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full font-semibold text-sm transition-all shadow-sm active:scale-95 flex items-center gap-1.5 whitespace-nowrap"
             >
               Apply to Attend
               <ArrowUpRight className="w-4 h-4" />
@@ -135,10 +135,10 @@ export function Layout({ children, onOpenAdmin }: { children: React.ReactNode; o
           </nav>
 
           {/* Mobile Menu Toggle */}
-          <div className="flex items-center gap-2 xl:hidden">
+          <div className="flex items-center gap-1.5 sm:gap-2 xl:hidden shrink-0">
             <button 
               onClick={handleApplyClick}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow-sm"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-3 sm:px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow-sm"
             >
               Apply
             </button>

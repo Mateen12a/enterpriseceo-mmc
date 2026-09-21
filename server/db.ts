@@ -191,7 +191,7 @@ class MemoryStore {
       paymentStatus: 'paid' | 'unpaid' | 'pay_in_person';
       paymentReference?: string;
       paymentAmount?: number;
-      paymentMethod?: 'paystack' | 'offline' | 'manual';
+      paymentMethod?: 'flutterwave' | 'offline' | 'manual';
       autoInvite?: boolean;
     }
   ): Promise<IParticipant | null> {
@@ -207,8 +207,8 @@ class MemoryStore {
         item.status = 'invited';
       }
       const existingTags = item.adminTags || [];
-      if (!existingTags.includes('Paid (Paystack)') && data.paymentMethod === 'paystack') {
-        item.adminTags = [...existingTags, 'Paid (Paystack)'];
+      if (!existingTags.includes('Paid (Flutterwave)') && data.paymentMethod === 'flutterwave') {
+        item.adminTags = [...existingTags, 'Paid (Flutterwave)'];
       }
     } else if (data.paymentStatus === 'pay_in_person') {
       const existingTags = item.adminTags || [];

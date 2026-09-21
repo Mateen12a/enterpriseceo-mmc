@@ -57,7 +57,7 @@ interface AdminParticipantsProps {
     paymentStatus: 'paid' | 'unpaid' | 'pay_in_person';
     paymentReference?: string;
     paymentAmount?: number;
-    paymentMethod?: 'paystack' | 'offline' | 'manual';
+    paymentMethod?: 'flutterwave' | 'offline' | 'manual';
   }) => Promise<void>;
   onUpdateTags: (id: string, tags: string[]) => Promise<void>;
   selectedParticipant: AdminParticipant | null;
@@ -105,7 +105,7 @@ export function AdminParticipants({
   const [editPaymentStatus, setEditPaymentStatus] = useState<'paid' | 'unpaid' | 'pay_in_person'>('unpaid');
   const [editPaymentRef, setEditPaymentRef] = useState('');
   const [editPaymentAmount, setEditPaymentAmount] = useState<string>('500000');
-  const [editPaymentMethod, setEditPaymentMethod] = useState<'paystack' | 'offline' | 'manual'>('offline');
+  const [editPaymentMethod, setEditPaymentMethod] = useState<'flutterwave' | 'offline' | 'manual'>('offline');
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState<string | null>(null);
 
   // Drawer Tags State
@@ -644,7 +644,7 @@ export function AdminParticipants({
                         onChange={e => setEditPaymentMethod(e.target.value as any)}
                         className="w-full py-1.5 px-2 bg-white border border-navy-300 rounded text-xs text-navy-900"
                       >
-                        <option value="paystack">Paystack Online</option>
+                        <option value="flutterwave">Flutterwave Online</option>
                         <option value="offline">Pay in Person / Invoice</option>
                         <option value="manual">Manual Admin Override</option>
                       </select>
@@ -673,7 +673,7 @@ export function AdminParticipants({
                         type="text"
                         value={editPaymentRef}
                         onChange={e => setEditPaymentRef(e.target.value)}
-                        placeholder="e.g. REC-89421 or Paystack Ref"
+                        placeholder="e.g. REC-89421 or Flutterwave Ref"
                         className="w-full py-1.5 px-2 bg-white border border-navy-300 rounded text-xs text-navy-900 font-mono"
                       />
                     </div>
@@ -710,7 +710,7 @@ export function AdminParticipants({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-[10px] text-grey-500 font-semibold">Quick add:</span>
                   {[
-                    'Paid (Paystack)', 
+                    'Paid (Flutterwave)', 
                     'Pay in Person', 
                     'VIP Delegate', 
                     'Pan-Atlantic Alum', 

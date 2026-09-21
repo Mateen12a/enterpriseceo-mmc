@@ -18,11 +18,7 @@ import { AddToCalendar } from './AddToCalendar';
 
 declare global {
   interface Window {
-    PaystackPop?: {
-      setup: (options: any) => {
-        openIframe: () => void;
-      };
-    };
+    FlutterwaveCheckout?: (options: any) => { close?: () => void } | undefined;
   }
 }
 
@@ -39,7 +35,7 @@ const DISPOSABLE_EMAIL_DOMAINS = new Set([
 type ModalStep = 'form' | 'payment' | 'paid_success';
 
 export function ApplicationModal() {
-  const { isOpen, closeApplyModal } = useApplyModal();
+  const { isOpen, closeApplyModal, openApplyModal } = useApplyModal();
   
   // Step flow: 'form' -> 'payment' -> 'paid_success' | 'offline_success'
   const [currentStep, setCurrentStep] = useState<ModalStep>('form');
@@ -78,35 +74,89 @@ export function ApplicationModal() {
     organisation?: string;
   } | null>(null);
 
-  // Paystack config & status
-  const [paystackConfig, setPaystackConfig] = useState<{
+  // Flutterwave config & status
+  const [paymentConfig, setPaymentConfig] = useState<{
     publicKey: string;
     amount: number;
     formattedAmount: string;
   }>({
-    publicKey: 'pk_test_placeholder_key',
+    publicKey: '',
     amount: 500000,
     formattedAmount: '₦500,000',
   });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const firstInputRef = useRef<HTMLInputElement>(null);
+  const flwHandlerRef = useRef<{ close?: () => void } | null>(null);
+  const flwReturnHandledRef = useRef(false);
+  const [redirectReference, setRedirectReference] = useState<string | null>(null);
 
-  // Load Paystack config on mount
+  // Load Flutterwave config on mount
   useEffect(() => {
-    fetch('/api/paystack/config')
+    fetch('/api/flutterwave/config')
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          setPaystackConfig({
-            publicKey: data.publicKey || 'pk_test_placeholder_key',
-            amount: data.amount || 250000,
-            formattedAmount: data.formattedAmount || '₦250,000',
+          setPaymentConfig({
+            publicKey: data.publicKey || '',
+            amount: data.amount || 500000,
+            formattedAmount: data.formattedAmount || '₦500,000',
           });
         }
       })
-      .catch(err => console.warn('Could not load Paystack config:', err));
+      .catch(err => console.warn('Could not load Flutterwave config:', err));
   }, []);
+
+  // Return from the hosted (redirect) checkout: verify the transaction and
+  // re-open the modal on the confirmation screen. Runs once on page load.
+  useEffect(() => {
+    if (flwReturnHandledRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') !== 'return') return;
+    flwReturnHandledRef.current = true;
+
+    const txRef = params.get('tx_ref') || redirectReference || '';
+    const transactionId = params.get('transaction_id') || undefined;
+    const status = params.get('status');
+
+    // Clean the URL so refreshes don't re-trigger verification.
+    window.history.replaceState({}, '', window.location.pathname);
+
+    if (status && status !== 'successful' && status !== 'completed') {
+      return; // cancelled or failed at the gateway — nothing to confirm
+    }
+    if (!txRef) return;
+
+    // tx_ref format: MMC26-<participantId>-<timestamp>
+    const parts = txRef.split('-');
+    const participantId = parts.length >= 3 ? parts.slice(1, -1).join('-') : null;
+    if (!participantId) return;
+
+    (async () => {
+      try {
+        const verifyRes = await fetch('/api/flutterwave/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reference: txRef, transactionId, participantId }),
+        });
+        const verifyData = await verifyRes.json();
+        if (verifyData.success && verifyData.participant) {
+          setRegisteredParticipant({
+            id: verifyData.participant.id,
+            fullName: verifyData.participant.fullName,
+            email: verifyData.participant.email,
+            organisation: verifyData.participant.organisation,
+          });
+          setCurrentStep('paid_success');
+          openApplyModal();
+        }
+        // On failure we stay silent here; the delegate can reach the
+        // admissions office, and the payment remains visible in admin records.
+      } catch (err) {
+        console.warn('Payment return verification failed:', err);
+      }
+    })();
+  }, [redirectReference, openApplyModal]);
 
   // Body scroll locking and Escape key handler
   useEffect(() => {
@@ -298,50 +348,50 @@ export function ApplicationModal() {
     }
   };
 
-  // Step 2: Pay Online via Paystack Inline Popup (the only payment path offered)
-  const handlePayOnlineWithPaystack = () => {
+  // Step 2: Pay Online — Flutterwave inline checkout with automatic fallback
+  // to the hosted (redirect) checkout when the inline iframe cannot open
+  // (popup blockers, sandboxed preview iframes, some mobile browsers).
+  const handlePayOnlineWithFlutterwave = () => {
     if (!registeredParticipant) return;
     setIsProcessingPayment(true);
     setErrorMessage(null);
 
     const email = registeredParticipant.email;
     const participantId = registeredParticipant.id;
-    const amountKobo = paystackConfig.amount * 100;
-    const reference = `MMC26_${participantId}_${Date.now()}`;
+    const reference = `MMC26-${participantId}-${Date.now()}`;
 
-    if (typeof window.PaystackPop !== 'undefined') {
-      const handler = window.PaystackPop.setup({
-        key: paystackConfig.publicKey,
-        email,
-        amount: amountKobo,
-        ref: reference,
+    if (typeof window.FlutterwaveCheckout === 'function' && paymentConfig.publicKey) {
+      try {
+      const handler = window.FlutterwaveCheckout({
+        public_key: paymentConfig.publicKey,
+        tx_ref: reference,
+        amount: paymentConfig.amount,
         currency: 'NGN',
-        metadata: {
-          participantId,
-          fullName: registeredParticipant.fullName,
-          custom_fields: [
-            {
-              display_name: "Participant ID",
-              variable_name: "participant_id",
-              value: participantId,
-            },
-            {
-              display_name: "Cohort",
-              variable_name: "cohort",
-              value: "EnterpriseCEO Masterclass 2026",
-            }
-          ]
+        payment_options: 'card,banktransfer,ussd',
+        customer: {
+          email,
+          name: registeredParticipant.fullName,
+          // phone: registeredParticipant.phone,
         },
-        callback: async function (response: any) {
+        customizations: {
+          title: 'Media Owners & Executives Masterclass 2026',
+          description: 'Executive masterclass registration fee',
+        },
+        meta: {
+          participantId,
+          cohort: 'EnterpriseCEO Masterclass 2026',
+        },
+        callback: async function (data: any) {
           try {
-            // Verify payment on backend
-            const verifyRes = await fetch('/api/paystack/verify', {
+            // Server verifies the transaction against the Flutterwave API
+            // before the seat is confirmed.
+            const verifyRes = await fetch('/api/flutterwave/verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                reference: response.reference || reference,
+                reference,
+                transactionId: data.transaction_id ? String(data.transaction_id) : undefined,
                 participantId,
-                amount: paystackConfig.amount,
               }),
             });
             const verifyData = await verifyRes.json();
@@ -351,41 +401,61 @@ export function ApplicationModal() {
               setErrorMessage(verifyData.error || 'Payment was received but status verification failed. Please contact the admissions office.');
             }
           } catch (err) {
-            console.error('Paystack verification error:', err);
+            console.error('Flutterwave verification error:', err);
             setErrorMessage('Network error while recording payment. Our secretariat will verify your transaction reference.');
           } finally {
             setIsProcessingPayment(false);
           }
         },
-        onClose: function () {
+        onclose: function () {
           setIsProcessingPayment(false);
         },
-      });
+        });
 
-      handler.openIframe();
+        // Flutterwave v3 inline opens itself; keep a handle so we can close it.
+        flwHandlerRef.current = handler;
+      } catch (openErr) {
+        // Inline checkout failed to open (blocked iframe / popup blocker) —
+        // fall back to the hosted redirect checkout automatically.
+        console.warn('Flutterwave inline checkout failed to open, falling back to hosted checkout:', openErr);
+        void startHostedCheckout();
+      }
     } else {
-      // Fallback simulation in dev / preview if Paystack script is blocked by CSP/iFrame
-      setTimeout(async () => {
-        try {
-          const verifyRes = await fetch('/api/paystack/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              reference,
-              participantId,
-              amount: paystackConfig.amount,
-            }),
-          });
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
-            setCurrentStep('paid_success');
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setIsProcessingPayment(false);
-        }
-      }, 800);
+      // Gateway script unavailable (blocked or missing) — use the hosted
+      // checkout, which is created server-side and does not need the script.
+      void startHostedCheckout();
+    }
+  };
+
+  // Hosted (redirect) checkout: server creates a Standard payment session and
+  // the browser is redirected to Flutterwave's full-page checkout. After
+  // payment the delegate lands back on the site with ?payment=return and the
+  // modal re-opens to verify and confirm their seat.
+  const startHostedCheckout = async () => {
+    if (!registeredParticipant) return;
+    try {
+      const res = await fetch('/api/flutterwave/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantId: registeredParticipant.id,
+          fullName: registeredParticipant.fullName,
+          email: registeredParticipant.email,
+          phone: formData.phone,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.paymentLink) {
+        setRedirectReference(data.reference);
+        window.location.href = data.paymentLink;
+        return; // navigation proceeds
+      }
+      setErrorMessage(data.error || 'Could not start the payment session. Please try again.');
+    } catch (err) {
+      console.error('Hosted checkout error:', err);
+      setErrorMessage('Could not reach the payment gateway. Please check your connection and try again.');
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -438,7 +508,7 @@ export function ApplicationModal() {
                 </h3>
                 <p className="text-[11px] sm:text-xs text-cream-50/75 mt-1 leading-snug">
                   {currentStep === 'form' && "By invitation and selective registration. Media owners, publishers, and senior executives."}
-                  {currentStep === 'payment' && "Your registration has been saved. Complete payment securely online via Paystack to confirm your seat."}
+                  {currentStep === 'payment' && "Your registration has been saved. Complete payment securely online via Flutterwave to confirm your seat."}
                   {currentStep === 'paid_success' && "2026 Executive Cohort Admissions • Confirmation Notice"}
                 </p>
               </div>
@@ -774,7 +844,7 @@ export function ApplicationModal() {
                       />
                       <div className="text-xs text-ink-900 leading-relaxed">
                         <span className="font-semibold text-navy-900">
-                          I understand that this is a paid executive masterclass. Upon submission, I will complete payment securely online via Paystack to confirm my seat.
+                          I understand that this is a paid executive masterclass. Upon submission, I will complete payment securely online via Flutterwave to confirm my seat.
                         </span>{" "}
                         <span className="text-orange-600 font-bold">*</span>
                       </div>
@@ -788,7 +858,7 @@ export function ApplicationModal() {
                             DELEGATE FEE
                           </span>
                           <span className="block text-base font-black text-white leading-none mt-0.5">
-                            {paystackConfig.formattedAmount}
+                            {paymentConfig.formattedAmount}
                           </span>
                         </div>
                         <div className="text-left">
@@ -872,7 +942,7 @@ export function ApplicationModal() {
                         </div>
                         <div className="text-right shrink-0">
                           <span className="text-2xl font-black text-navy-900 block leading-tight">
-                            {paystackConfig.formattedAmount}
+                            {paymentConfig.formattedAmount}
                           </span>
                           <span className="text-[11px] text-grey-500 font-medium">Per Delegate (NGN)</span>
                         </div>
@@ -880,7 +950,7 @@ export function ApplicationModal() {
 
                       {/* Single Path: Secure Online Payment */}
                       <div className="grid grid-cols-1 gap-4 pt-1">
-                        {/* Option 1: Pay Online via Paystack */}
+                        {/* Option 1: Pay Online via Flutterwave */}
                         <div className="bg-white p-4 rounded-lg border-2 border-orange-500/80 shadow-sm flex flex-col justify-between space-y-4 relative">
                           <div className="absolute -top-2.5 right-3 bg-orange-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
                             Recommended
@@ -888,26 +958,26 @@ export function ApplicationModal() {
                           <div>
                             <div className="flex items-center gap-2 text-navy-900 font-bold text-sm">
                               <CreditCard className="w-4 h-4 text-orange-500" />
-                              <span>Pay Online (Paystack)</span>
+                              <span>Pay Online (Flutterwave)</span>
                             </div>
                             <p className="text-xs text-grey-600 mt-1.5 leading-relaxed">
-                              Pay securely with Nigerian debit cards, USSD, Apple Pay, or bank transfer via Paystack. Your admission moves automatically to <strong>Invited &amp; Confirmed</strong>.
+                              Pay securely with Nigerian debit cards, USSD, or bank transfer via Flutterwave. Your admission moves automatically to <strong>Invited &amp; Confirmed</strong>.
                             </p>
                           </div>
                           <button
                             type="button"
-                            onClick={handlePayOnlineWithPaystack}
+                            onClick={handlePayOnlineWithFlutterwave}
                             disabled={isProcessingPayment}
                             className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-xs rounded-lg transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
                           >
                             {isProcessingPayment ? (
                               <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Processing Paystack...
+                                Opening secure checkout...
                               </>
                             ) : (
                               <>
-                                <span>Pay {paystackConfig.formattedAmount} via Paystack</span>
+                                <span>Pay {paymentConfig.formattedAmount} via Flutterwave</span>
                                 <ArrowRight className="w-3.5 h-3.5" />
                               </>
                             )}
@@ -953,7 +1023,7 @@ export function ApplicationModal() {
                         Welcome to the 2026 Executive Cohort
                       </h4>
                       <p className="text-ink-900/80 max-w-md mx-auto text-sm leading-relaxed">
-                        Your registration fee has been successfully verified via Paystack. Your admission status is now <strong>Invited &amp; Confirmed</strong>.
+                        Your registration fee has been successfully verified via Flutterwave. Your admission status is now <strong>Invited &amp; Confirmed</strong>.
                       </p>
                     </div>
 

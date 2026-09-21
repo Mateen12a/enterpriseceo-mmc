@@ -24,7 +24,7 @@ export interface IParticipant {
   paymentStatus: 'paid' | 'unpaid' | 'pay_in_person';
   paymentReference?: string;
   paymentAmount?: number;
-  paymentMethod?: 'paystack' | 'offline' | 'manual';
+  paymentMethod?: 'flutterwave' | 'offline' | 'manual';
   paidAt?: string;
   adminTags?: string[];
   emailVerified?: boolean;

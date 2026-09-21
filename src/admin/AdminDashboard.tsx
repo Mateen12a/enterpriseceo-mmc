@@ -210,7 +210,7 @@ export function AdminDashboard({ onBackToPublic }: AdminDashboardProps) {
       paymentStatus: 'paid' | 'unpaid' | 'pay_in_person'; 
       paymentReference?: string; 
       paymentAmount?: number; 
-      paymentMethod?: 'paystack' | 'offline' | 'manual';
+      paymentMethod?: 'flutterwave' | 'offline' | 'manual';
     }
   ) => {
     if (!token) return;

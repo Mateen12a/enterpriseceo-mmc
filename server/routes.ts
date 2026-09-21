@@ -20,6 +20,11 @@ interface RateLimitRecord {
 const registerRateLimit = new Map<string, RateLimitRecord>();
 const loginRateLimit = new Map<string, RateLimitRecord>();
 const otpRateLimit = new Map<string, RateLimitRecord>();
+const flwVerifyRateLimit = new Map<string, RateLimitRecord>();
+
+// Replay protection: transaction IDs already applied to a participant.
+// Maps Flutterwave transaction id -> participantId it was consumed by.
+const usedFlwTransactions = new Map<string, string>();
 
 function checkRateLimit(map: Map<string, RateLimitRecord>, ip: string, maxRequests: number, windowMs: number): boolean {
   const now = Date.now();
@@ -173,32 +178,149 @@ apiRouter.post('/verify-email/confirm', (req: Request, res: Response) => {
 });
 
 // -------------------------------------------------------------
-// PAYSTACK PAYMENT SYSTEM INTEGRATION
+// FLUTTERWAVE PAYMENT SYSTEM INTEGRATION
 // -------------------------------------------------------------
+const FLW_API_BASE = 'https://api.flutterwave.com/v3';
+
+function getFlutterwaveSecret(): string | null {
+  const key = process.env.FLW_SECRET_KEY || process.env.FLUTTERWAVE_SECRET_KEY || '';
+  return key.trim() ? key.trim() : null;
+}
+
+function getRegistrationFeeNaira(): number {
+  const raw = process.env.FLW_AMOUNT_NAIRA || process.env.PAYSTACK_AMOUNT_NAIRA || '500000';
+  const parsed = parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 500000;
+}
+
 /**
- * PUBLIC: GET /api/paystack/config
+ * PUBLIC: GET /api/flutterwave/config
  * Returns public key & standard registration fee
  */
-apiRouter.get('/paystack/config', (_req: Request, res: Response) => {
-  const publicKey = process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder_key';
-  const amountNaira = parseInt(process.env.PAYSTACK_AMOUNT_NAIRA || '500000', 10);
+apiRouter.get('/flutterwave/config', (_req: Request, res: Response) => {
+  const publicKey = process.env.FLW_PUBLIC_KEY || process.env.FLUTTERWAVE_PUBLIC_KEY || '';
+  const amountNaira = getRegistrationFeeNaira();
 
   res.json({
     success: true,
     publicKey,
+    configured: Boolean(publicKey),
     amount: amountNaira,
-    amountKobo: amountNaira * 100,
     currency: 'NGN',
     formattedAmount: `₦${amountNaira.toLocaleString()}`,
   });
 });
 
 /**
- * PUBLIC: POST /api/paystack/verify
- * Verifies payment reference and automatically updates participant status
+ * PUBLIC: POST /api/flutterwave/init
+ * Creates a Flutterwave Standard checkout session and returns the hosted
+ * payment link. Used as the fallback when the inline iframe checkout cannot
+ * open (popup blockers, sandboxed preview iframes, some mobile browsers).
+ * The tx_ref embeds the participant ID so verification stays bound to the
+ * originating application.
  */
-apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
-  const { reference, participantId, amount } = req.body;
+apiRouter.post('/flutterwave/init', async (req: Request, res: Response) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  if (!checkRateLimit(flwVerifyRateLimit, clientIp, 30, 10 * 60 * 1000)) {
+    res.status(429).json({
+      success: false,
+      error: 'Too many payment attempts. Please wait a few minutes and try again.',
+    });
+    return;
+  }
+
+  const { participantId, fullName, email, phone } = req.body;
+  if (!participantId || !email || !fullName) {
+    res.status(400).json({
+      success: false,
+      error: 'Participant ID, name and email are required to start payment.',
+    });
+    return;
+  }
+
+  const flwSecret = getFlutterwaveSecret();
+  const publicKey = process.env.FLW_PUBLIC_KEY || process.env.FLUTTERWAVE_PUBLIC_KEY || '';
+  if (!flwSecret || !publicKey) {
+    res.status(503).json({
+      success: false,
+      error: 'Payment gateway is not configured. Please contact the admissions office.',
+    });
+    return;
+  }
+
+  const appUrl = (process.env.APP_URL || process.env.PUBLIC_BASE_URL || `http://${req.headers.host || 'localhost:3000'}`).replace(/\/$/, '');
+  const reference = `MMC26-${participantId}-${Date.now()}`;
+
+  try {
+    const initRes = await fetch(`${FLW_API_BASE}/payments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${flwSecret}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tx_ref: reference,
+        amount: getRegistrationFeeNaira(),
+        currency: 'NGN',
+        redirect_url: `${appUrl}/?payment=return`,
+        customer: {
+          email: String(email),
+          name: String(fullName),
+          ...(phone ? { phonenumber: String(phone) } : {}),
+        },
+        customizations: {
+          title: 'Media Owners & Executives Masterclass 2026',
+          description: 'Executive masterclass registration fee',
+        },
+        meta: {
+          participantId,
+          cohort: 'EnterpriseCEO Masterclass 2026',
+        },
+      }),
+    });
+    const initData: any = await initRes.json();
+
+    if (initData.status !== 'success' || !initData.data?.link) {
+      console.error('[Flutterwave Init Error]:', initData.message || initData);
+      res.status(502).json({
+        success: false,
+        error: initData.message || 'Could not start the payment session. Please try again or contact the admissions office.',
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      paymentLink: initData.data.link,
+      reference,
+    });
+  } catch (err: any) {
+    console.error('[Flutterwave Init Error]:', err);
+    res.status(502).json({
+      success: false,
+      error: 'Could not reach the payment gateway. Please check your connection and try again.',
+    });
+  }
+});
+
+/**
+ * PUBLIC: POST /api/flutterwave/verify
+ * Verifies the transaction server-side against the Flutterwave API and
+ * automatically updates participant status. A participant is only marked
+ * paid when Flutterwave itself confirms a successful NGN transaction of
+ * at least the registration fee — the client can never fake this.
+ */
+apiRouter.post('/flutterwave/verify', async (req: Request, res: Response) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  if (!checkRateLimit(flwVerifyRateLimit, clientIp, 30, 10 * 60 * 1000)) {
+    res.status(429).json({
+      success: false,
+      error: 'Too many verification attempts. Please wait a few minutes and try again.',
+    });
+    return;
+  }
+
+  const { reference, transactionId, participantId } = req.body;
 
   if (!reference || !participantId) {
     res.status(400).json({
@@ -208,33 +330,87 @@ apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
     return;
   }
 
-  try {
-    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
-    let paymentVerified = true;
-    let verifiedAmount = amount || 500000;
+  const flwSecret = getFlutterwaveSecret();
+  if (!flwSecret) {
+    res.status(503).json({
+      success: false,
+      error: 'Payment gateway is not configured. Please contact the admissions office.',
+    });
+    return;
+  }
 
-    // If live/test secret key is provided, perform upstream Paystack API verification
-    if (paystackSecret && paystackSecret.startsWith('sk_')) {
-      try {
-        const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-          headers: {
-            Authorization: `Bearer ${paystackSecret}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const verifyData: any = await verifyRes.json();
-        if (!verifyData.status || verifyData.data?.status !== 'success') {
-          res.status(400).json({
-            success: false,
-            error: verifyData.message || 'Payment verification failed at Paystack gateway.',
-          });
-          return;
-        }
-        verifiedAmount = (verifyData.data?.amount || 50000000) / 100;
-      } catch (upstreamErr) {
-        console.warn('[Paystack Upstream Verify Warning]:', upstreamErr);
-      }
+  try {
+    const lookup = transactionId
+      ? `${FLW_API_BASE}/transactions/${encodeURIComponent(String(transactionId))}/verify`
+      : `${FLW_API_BASE}/transactions/verify_by_reference?tx_ref=${encodeURIComponent(String(reference))}`;
+    const verifyRes = await fetch(lookup, {
+      headers: {
+        Authorization: `Bearer ${flwSecret}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const verifyData: any = await verifyRes.json();
+
+    if (verifyData.status !== 'success' || !verifyData.data) {
+      res.status(400).json({
+        success: false,
+        error: verifyData.message || 'We could not find a completed payment for this reference.',
+      });
+      return;
     }
+
+    const tx = verifyData.data;
+
+    if (tx.status !== 'successful') {
+      res.status(400).json({
+        success: false,
+        error: `Payment is not complete (status: ${tx.status || 'unknown'}). No fee has been recorded.`,
+      });
+      return;
+    }
+
+    if (String(tx.currency || '').toUpperCase() !== 'NGN') {
+      res.status(400).json({
+        success: false,
+        error: 'Unexpected payment currency. Please contact the admissions office.',
+      });
+      return;
+    }
+
+    const expectedNaira = getRegistrationFeeNaira();
+    if (!tx.amount || Number(tx.amount) + 0.01 < expectedNaira) {
+      res.status(400).json({
+        success: false,
+        error: 'The payment amount does not match the registration fee. Please contact the admissions office.',
+      });
+      return;
+    }
+
+    const verifiedAmount = Number(tx.amount);
+
+    // Replay & cross-participant binding. Every tx_ref this server generates
+    // embeds the participant ID ("MMC26-<participantId>-<timestamp>"), so a
+    // transaction can only ever be applied to the application it was created
+    // for — a receipt can never be reused for someone else.
+    const txRef = String(tx.tx_ref || '');
+    if (!txRef.startsWith(`MMC26-${participantId}-`)) {
+      res.status(400).json({
+        success: false,
+        error: 'This transaction is not linked to your application. Please complete payment from your registration window, or contact the admissions office.',
+      });
+      return;
+    }
+
+    const txKey = tx.id !== undefined && tx.id !== null ? String(tx.id) : txRef;
+    const consumedBy = usedFlwTransactions.get(txKey);
+    if (consumedBy && consumedBy !== participantId) {
+      res.status(400).json({
+        success: false,
+        error: 'This payment has already been applied to an application.',
+      });
+      return;
+    }
+    usedFlwTransactions.set(txKey, participantId);
 
     let updatedParticipant: any = null;
 
@@ -245,10 +421,10 @@ apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
           paymentStatus: 'paid',
           paymentReference: reference,
           paymentAmount: verifiedAmount,
-          paymentMethod: 'paystack',
+          paymentMethod: 'flutterwave',
           paidAt: new Date().toISOString(),
           status: 'invited', // Automatically move to invited upon confirmed payment!
-          $addToSet: { adminTags: 'Paid (Paystack)' },
+          $addToSet: { adminTags: 'Paid (Flutterwave)' },
         },
         { new: true }
       );
@@ -258,7 +434,7 @@ apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
         paymentStatus: 'paid',
         paymentReference: reference,
         paymentAmount: verifiedAmount,
-        paymentMethod: 'paystack',
+        paymentMethod: 'flutterwave',
         autoInvite: true, // Automatically move to invited upon confirmed payment!
       });
     }
@@ -271,7 +447,7 @@ apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
       return;
     }
 
-    console.log(`[Payment] Participant ${participantId} paid ₦${verifiedAmount} via Paystack. Status moved to INVITED.`);
+    console.log(`[Payment] Participant ${participantId} paid ₦${verifiedAmount} via Flutterwave (tx ${tx.id ?? 'n/a'}). Status moved to INVITED.`);
 
     res.json({
       success: true,
@@ -279,12 +455,35 @@ apiRouter.post('/paystack/verify', async (req: Request, res: Response) => {
       participant: updatedParticipant,
     });
   } catch (err: any) {
-    console.error('[Paystack Verify Error]:', err);
+    console.error('[Flutterwave Verify Error]:', err);
     res.status(500).json({
       success: false,
       error: 'An internal error occurred while recording payment confirmation.',
     });
   }
+});
+
+/**
+ * POST /api/flutterwave/webhook
+ * Server-to-server payment notifications. Only processed when
+ * FLUTTERWAVE_SECRET_HASH is set (same value entered in the Flutterwave
+ * dashboard webhook settings). The webhook is a safety net — the primary
+ * confirmation path is verify_by_reference above.
+ */
+apiRouter.post('/flutterwave/webhook', (req: Request, res: Response) => {
+  const secretHash = process.env.FLUTTERWAVE_SECRET_HASH;
+  if (!secretHash) {
+    res.status(200).json({ received: true, ignored: true });
+    return;
+  }
+  const signature = req.headers['verif-hash'];
+  if (!signature || String(signature) !== secretHash) {
+    res.status(401).json({ success: false, error: 'Invalid webhook signature.' });
+    return;
+  }
+  // Acknowledged. Reconciliation of any missed payments happens through
+  // verify_by_reference once the delegate returns to the site.
+  res.status(200).json({ received: true });
 });
 
 // -------------------------------------------------------------

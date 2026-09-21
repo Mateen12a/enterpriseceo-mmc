@@ -114,7 +114,7 @@ export function AdminOverview({
           </div>
         </div>
 
-        {/* Card 3: Paid Online (Paystack) */}
+        {/* Card 3: Paid Online (Flutterwave) */}
         <div 
           onClick={() => onNavigateToParticipants('all')}
           className="bg-white p-5 rounded-lg border border-grey-200 shadow-sm hover:border-emerald-400 transition-all cursor-pointer group"

@@ -374,8 +374,9 @@ export function ApplicationModal() {
           // phone: registeredParticipant.phone,
         },
         customizations: {
-          title: 'Media Owners & Executives Masterclass 2026',
-          description: 'Executive masterclass registration fee',
+          title: 'EnterpriseCEO Media Masterclass',
+          description: 'Media Owners & Executives Masterclass — registration fee',
+          logo: `${window.location.origin}/og-image.png`,
         },
         meta: {
           participantId,

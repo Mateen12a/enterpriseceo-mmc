@@ -188,9 +188,12 @@ function getFlutterwaveSecret(): string | null {
 }
 
 function getRegistrationFeeNaira(): number {
-  const raw = process.env.FLW_AMOUNT_NAIRA || process.env.PAYSTACK_AMOUNT_NAIRA || '500000';
+  // 500000 is the real fee. Amount overrides are only honoured when they are
+  // plausible (>= 1000 NGN) so a stray/wrong env value on a host (e.g. "500",
+  // kobo-style, or an empty default) can never silently undercharge.
+  const raw = process.env.FLW_AMOUNT_NAIRA || process.env.PAYSTACK_AMOUNT_NAIRA || '';
   const parsed = parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 500000;
+  return Number.isFinite(parsed) && parsed >= 1000 ? parsed : 500000;
 }
 
 /**
@@ -268,9 +271,11 @@ apiRouter.post('/flutterwave/init', async (req: Request, res: Response) => {
           name: String(fullName),
           ...(phone ? { phonenumber: String(phone) } : {}),
         },
+        payment_options: 'card,banktransfer,ussd',
         customizations: {
-          title: 'Media Owners & Executives Masterclass 2026',
-          description: 'Executive masterclass registration fee',
+          title: 'EnterpriseCEO Media Masterclass',
+          description: 'Media Owners & Executives Masterclass — registration fee',
+          logo: `${appUrl}/og-image.png`,
         },
         meta: {
           participantId,
